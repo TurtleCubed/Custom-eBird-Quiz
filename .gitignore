@@ -1,0 +1,7 @@
+*.idea
+*.jpeg
+*.jpg
+*.png
+*.zip
+*.whl
+venv/
