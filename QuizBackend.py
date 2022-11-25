@@ -13,7 +13,7 @@ class QuizBackend():
     """
     QuizBackend Constantly runs fetch() in a separate thread to load bird images into memory.
     """
-    def __init__(self, questions=3):
+    def __init__(self, questions=20):
         super().__init__()
         self.event = Event()
         # Open Browser and set parameters
@@ -23,7 +23,7 @@ class QuizBackend():
         self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
 
         # Sort species
-        self.alpha_species = sorted([x[:-1].strip() for x in open("species.txt", "r").readlines()])
+        self.alpha_species = sorted([x[:-1].strip() for x in open("species.txt", "r").readlines() if x[:-1].strip()])
         self.species = []
         self.imgs = []
         self.guesses = []
