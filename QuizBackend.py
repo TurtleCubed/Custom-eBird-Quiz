@@ -62,7 +62,7 @@ class QuizBackend():
 
     def fetch_until_stop(self):
         """Fetch images until we have the desired number of bird images."""
-        while self.i + 1 < self.questions:
+        while len(self.species) <= self.questions:
             self.fetch()
         # When we're done, close the browser
         self.browser.close()
