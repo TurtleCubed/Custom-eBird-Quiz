@@ -4,10 +4,11 @@ import requests
 from PIL import Image
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
-from random import sample
+from random import sample, randint
 from threading import Thread, Event
 
 # TODO: probabilistic sampling of species
+# TODO: change species name navigation to use URL search
 
 class QuizBackend():
     """
@@ -17,7 +18,7 @@ class QuizBackend():
         super().__init__()
         self.event = Event()
         # Open Browser and set parameters
-        self.browser = webdriver.Chrome(ChromeDriverManager().install())
+        self.browser = webdriver.Chrome(ChromeDriverManager(path("./resources")).install())
         self.browser.minimize_window()
         self.browser.get('https://media.ebird.org/catalog?view=grid&mediaType=photo')
         self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
@@ -82,6 +83,10 @@ class QuizBackend():
         # Clear search bar
         self.clear_search()
         self.search_box.clear()
+        # Set random month
+        month = randint(1, 12)
+        self.browser.get(f'https://media.ebird.org/catalog?view=grid&mediaType=photo&beginMonth={month}')
+        self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
         # Type species name, then wait for autofill suggestion
         self.search_box.send_keys(species_name)
         while len(self.browser.find_elements(by=By.ID, value="Suggest-suggestion-0")) == 0:
