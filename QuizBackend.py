@@ -4,6 +4,7 @@ import requests
 from PIL import Image
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 from random import sample, randint
 from threading import Thread, Event
 
@@ -18,7 +19,8 @@ class QuizBackend():
         super().__init__()
         self.event = Event()
         # Open Browser and set parameters
-        self.browser = webdriver.Chrome(ChromeDriverManager(path="./resources").install())
+        chrome_options = self.get_headless_options()
+        self.browser = webdriver.Chrome(ChromeDriverManager(path="./resources").install(), options=chrome_options)
         self.browser.minimize_window()
         self.browser.get('https://media.ebird.org/catalog?view=grid&mediaType=photo')
         self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
@@ -34,6 +36,21 @@ class QuizBackend():
         self.i = 0
         self.correct = 0
         self.begin_thread()
+
+    def get_headless_options(self):
+        """Returns an options object with special configurations for headless running."""
+        chrome_options = Options()
+        # This line hides the browser
+        user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'
+        chrome_options.add_argument(f'user-agent={user_agent}')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--allow-running-insecure-content')
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument('log-level=2')
+        return chrome_options
 
     def get_current(self):
         """Return the image for the current species to guess."""
