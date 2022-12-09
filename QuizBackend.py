@@ -18,7 +18,7 @@ class QuizBackend():
         super().__init__()
         self.event = Event()
         # Open Browser and set parameters
-        self.browser = webdriver.Chrome(ChromeDriverManager(path("./resources")).install())
+        self.browser = webdriver.Chrome(ChromeDriverManager(path="./resources").install())
         self.browser.minimize_window()
         self.browser.get('https://media.ebird.org/catalog?view=grid&mediaType=photo')
         self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
