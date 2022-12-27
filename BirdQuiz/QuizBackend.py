@@ -16,7 +16,7 @@ class QuizBackend():
     """
     QuizBackend Constantly runs fetch() in a separate thread to load bird images into memory.
     """
-    def __init__(self, questions=1000, download=False, from_file=True):
+    def __init__(self, questions=20, download=False, from_file=False):
         super().__init__()
         self.event = Event()
         if not from_file:
