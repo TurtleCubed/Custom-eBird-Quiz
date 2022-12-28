@@ -23,7 +23,7 @@ WORKERS = 4
 NUM_EPOCHS = 100
 LR = 1e-3
 EVAL_EPOCH_EVERY = 10
-DIR = "./BirdRater/tmp"
+DIR = "./BirdRater/rating_dataset"
 TEST_DIR = "./BirdRater/tristan_set"
 
 def train_model(train_dl, model, val_dl):
