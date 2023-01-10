@@ -4,8 +4,10 @@ import requests
 from PIL import Image
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 from random import sample, randint
 from threading import Thread, Event
+import os, datetime
 
 # TODO: probabilistic sampling of species
 # TODO: change species name navigation to use URL search
@@ -14,14 +16,16 @@ class QuizBackend():
     """
     QuizBackend Constantly runs fetch() in a separate thread to load bird images into memory.
     """
-    def __init__(self, questions=20):
+    def __init__(self, questions=20, download=False, from_file=False):
         super().__init__()
         self.event = Event()
-        # Open Browser and set parameters
-        self.browser = webdriver.Chrome(ChromeDriverManager(path("./resources")).install())
-        self.browser.minimize_window()
-        self.browser.get('https://media.ebird.org/catalog?view=grid&mediaType=photo')
-        self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
+        if not from_file:
+            # Open Browser and set parameters
+            chrome_options = self.get_headless_options()
+            self.browser = webdriver.Chrome(ChromeDriverManager(path="./resources").install(), options=chrome_options)
+            self.browser.minimize_window()
+            self.browser.get('https://media.ebird.org/catalog?view=grid&mediaType=photo')
+            self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
 
         # Sort species
         self.alpha_species = sorted([x[:-1].strip() for x in open("species.txt", "r").readlines() if x[:-1].strip()])
@@ -30,10 +34,27 @@ class QuizBackend():
         self.guesses = []
 
         # Set other parameters
+        self.download = download
+        self.from_file = from_file
         self.questions = questions
         self.i = 0
         self.correct = 0
         self.begin_thread()
+
+    def get_headless_options(self):
+        """Returns an options object with special configurations for headless running."""
+        chrome_options = Options()
+        # This line hides the browser
+        user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'
+        chrome_options.add_argument(f'user-agent={user_agent}')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--allow-running-insecure-content')
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument('log-level=2')
+        return chrome_options
 
     def get_current(self):
         """Return the image for the current species to guess."""
@@ -65,13 +86,29 @@ class QuizBackend():
         """Fetch images until we have the desired number of bird images."""
         while len(self.species) <= self.questions:
             self.fetch()
-        # When we're done, close the browser
-        self.browser.close()
+        if not self.from_file:
+            # When we're done, close the browser
+            self.browser.close()
     
     def fetch(self):
         """Choose the next species and fetch an image for that species."""
         self.species.append(sample(self.alpha_species, 1)[0])
-        self.imgs.append(self.get_image(self.species[-1]))
+        if self.from_file:
+            self.imgs.append(self.get_image_from_file(self.species[-1]))
+        else:
+            self.imgs.append(self.get_image(self.species[-1]))
+        if self.download and not self.from_file:
+            if not os.path.isdir(f"./Quizzes/{self.species[-1]}"):
+                os.mkdir(f"./Quizzes/{self.species[-1]}")
+            self.imgs[-1].convert('RGB').save(f"./Quizzes/{self.species[-1]}/{datetime.datetime.now().timestamp()}.jpg")
+
+    def get_image_from_file(self, species_name, num_imgs=1):
+        root = f"./Quizzes/{species_name}"
+        fnames = sample(os.listdir(root), num_imgs)
+        imgs = []
+        for fname in fnames:
+            imgs.append(Image.open(root + "/" + fname))
+        return imgs[0] if num_imgs == 1 else imgs
 
     def get_image(self, species_name, num_imgs=1):
         """Get a bird image for a particular species"""
