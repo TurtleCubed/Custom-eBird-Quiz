@@ -1,44 +1,72 @@
 import http.client
 import json
+from json.decoder import JSONDecodeError
+from calendar import monthrange
 from random import randint
 
-conn = http.client.HTTPSConnection("api.ebird.org")
-payload = ''
-headers = {
-  'X-eBirdApiToken': '6c8plv8d6h6b'
-}
+class BirdAPI:
+	def __init__(self, region):
+		self.conn = http.client.HTTPSConnection("api.ebird.org")
+		self.payload = ''
+		self.headers = {
+			'X-eBirdApiToken': '6c8plv8d6h6b'
+		}
+		self.curr_checklist = None
+		self.min_species = 20
+		self.region = region
 
-def lookup(url):
-	conn.request("GET", url, payload, headers)
-	res = conn.getresponse()
-	data = res.read()
-	return data.decode('utf-8')
+	def get_checklist(self):
+		if self.curr_checklist is None:
+			self.new_checklist()
+		return self.curr_checklist["obsDt"] + "\n" + self.specieslist(self.curr_checklist)
 
-def taxonomy(spcode):
-    return lookup(f"/v2/ref/taxonomy/ebird?species={spcode}").split(",")[15]
-y = 2022
-m = randint(1, 12)
-d = randint(1, 28)
-CA = f"/v2/product/lists/US-CA/2022/{m}/{d}?maxResults=200"#f"/v2/product/lists/US/2022/{m}/{d}?maxResults=200"
-a = json.loads(lookup(CA))
-# print(a)
+	def get_location(self):
+		return self.hotspotloc(self.curr_checklist)
 
-for i in range(len(a)):
-	conn.request("GET", f"/v2/product/checklist/view/{a[i]['subID']}", payload, headers)
-	res = conn.getresponse()
-	data = res.read()
-	b = json.loads(data.decode("utf-8"))
-	if len(b["obs"]) >= 30 and lookup(f"/v2/ref/hotspot/info/{b['locId']}"):
-		for sp in b["obs"]:
-			# print(sp)
-			print(sp["howManyAtleast"], taxonomy(sp["speciesCode"]))
-		break
-# print(b)
-# print("mission failed")
-input("Press enter for date")
-print(f"{y}/{m}/{d}")
-input("Press enter for location")
-hotspot = lookup(f"/v2/ref/hotspot/info/{b['locId']}")
-print(hotspot)
+	def new_checklist(self):
+		for _ in range(10):
+			y = randint(2000, 2022)
+			m = randint(1, 12)
+			d = randint(1, monthrange(y, m)[1])
+			self.curr_checklist = self.filterspecies(self.getchecklists(self.region, y, m, d), self.min_species)
+			if self.curr_checklist:
+				return
+		print(f"Unable to find checklist in region {self.region} with species list of at least {self.min_species}!")
+		assert self.curr_checklist
 
-# print(lookup("/v2/ref/region/list/subnational2/US-CA"))
+	# Below are lookup tools
+
+	def lookup(self, url):
+		self.conn.request("GET", url, self.payload, self.headers)
+		res = self.conn.getresponse()
+		data = res.read()
+		try:
+			return json.loads(data.decode('utf-8'))
+		except JSONDecodeError:
+			return data.decode('utf-8')
+
+	def taxonomy(self, spcode):
+		return self.lookup(f"/v2/ref/taxonomy/ebird?species={spcode}").split(",")[15]
+
+	def getchecklists(self, region, y, m, d):
+		query = f"/v2/product/lists/{region}/{y}/{m}/{d}?maxResults=200"
+		return self.lookup(query)
+
+	def filterspecies(self, checklists, minspecies):
+		for c in checklists:
+			clist = self.lookup(f"/v2/product/checklist/view/{c['subID']}")
+			if len(clist["obs"]) >= minspecies and self.lookup(f"/v2/ref/hotspot/info/{clist['locId']}"):
+				return clist
+
+	def specieslist(self, clist):
+		out = ""
+		for sp in clist["obs"]:
+			out += str(sp["howManyStr"]) + " " + self.taxonomy(sp["speciesCode"]) + "\n"
+			if "comment" in sp:
+				out += "\t" + str(sp["comment"]) + "\n"
+		return out
+
+	def hotspotloc(self, checklist):
+		hotspot = self.lookup(f"/v2/ref/hotspot/info/{checklist['locId']}")
+		return hotspot["latitude"], hotspot["longitude"], hotspot["hierarchicalName"]
+
