@@ -1,0 +1,20 @@
+brotlipy==0.7.0
+certifi==2022.12.7
+cffi @ file:///C:/b/abs_49n3v2hyhr/croot/cffi_1670423218144/work
+charset-normalizer @ file:///home/conda/feedstock_root/build_artifacts/charset-normalizer_1661170624537/work
+click @ file:///D:/bld/click_1666798499870/work
+colorama @ file:///home/conda/feedstock_root/build_artifacts/colorama_1666700638685/work
+cryptography @ file:///C:/b/abs_b7d7drzbky/croot/cryptography_1673298763653/work
+idna @ file:///C:/b/abs_bdhbebrioa/croot/idna_1666125572046/work
+packaging @ file:///home/conda/feedstock_root/build_artifacts/packaging_1673482170163/work
+pycparser @ file:///tmp/build/80754af9/pycparser_1636541352034/work
+pyOpenSSL @ file:///opt/conda/conda-bld/pyopenssl_1643788558760/work
+PySocks @ file:///C:/ci/pysocks_1605307512533/work
+python-dotenv @ file:///home/conda/feedstock_root/build_artifacts/python-dotenv_1662230030282/work
+requests @ file:///home/conda/feedstock_root/build_artifacts/requests_1661872987712/work
+selenium @ file:///C:/ci/selenium_1614268120390/work
+tqdm @ file:///home/conda/feedstock_root/build_artifacts/tqdm_1662214488106/work
+urllib3 @ file:///C:/b/abs_21qa0j12xt/croot/urllib3_1670527000672/work
+webdriver-manager @ file:///home/conda/feedstock_root/build_artifacts/webdriver-manager_1668737014879/work
+win-inet-pton @ file:///C:/ci/win_inet_pton_1605306162074/work
+wincertstore==0.2

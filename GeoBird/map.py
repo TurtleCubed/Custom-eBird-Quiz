@@ -17,9 +17,10 @@ class GMap:
 
     def wait_click_pin(self, timeout=300):
         wait = WebDriverWait(self.driver, timeout)
-        wait.until(lambda driver: driver.current_url.startswith("https://www.google.com/maps/place/"))
-        s = self.driver.current_url.split("place/", 1)[1].split("/@")[0]
-        s = s.split(",+")
+        wait.until(lambda driver: "17z" in driver.current_url)
+        s = self.driver.current_url.split("/@", 1)[1].split(",17z")[0]
+        s = s.split(",")
+        # print(s)
         return [float(s[0]), float(s[1])]
 
     def show_true(self, guess, actual):

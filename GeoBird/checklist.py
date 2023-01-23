@@ -18,7 +18,7 @@ class BirdAPI:
 	def get_checklist(self):
 		if self.curr_checklist is None:
 			self.new_checklist()
-		return self.curr_checklist["obsDt"] + "\n" + self.specieslist(self.curr_checklist)
+		return self.curr_checklist["obsDt"] + " https://ebird.org/checklist/" + self.curr_checklist["subId"] + "\n" + self.specieslist(self.curr_checklist)
 
 	def get_location(self):
 		return self.hotspotloc(self.curr_checklist)
@@ -31,14 +31,19 @@ class BirdAPI:
 			self.curr_checklist = self.filterspecies(self.getchecklists(self.region, y, m, d), self.min_species)
 			if self.curr_checklist:
 				return
+		# print(self.curr_checklist)
 		print(f"Unable to find checklist in region {self.region} with species list of at least {self.min_species}!")
 		assert self.curr_checklist
 
 	# Below are lookup tools
 
 	def lookup(self, url):
-		self.conn.request("GET", url, self.payload, self.headers)
-		res = self.conn.getresponse()
+		try:
+			self.conn.request("GET", url, self.payload, self.headers)
+			res = self.conn.getresponse()
+		except http.client.RemoteDisconnected:
+			self.conn = http.client.HTTPSConnection("api.ebird.org")
+			return self.lookup(url)
 		data = res.read()
 		try:
 			return json.loads(data.decode('utf-8'))

@@ -1,7 +1,14 @@
 from checklist import BirdAPI
 from map import GMap
+from math import exp
 
-region = "California"
+REGION = "United States"
+N_GAMES = 5
+
+# TODO fetch all checklists in advance
+# TODO show locations guessed and stuff like that (end of game screen)
+# TODO show checklist comments for the lols
+# TODO make api key secret
 
 regions = {
     "California": "US-CA",
@@ -13,25 +20,37 @@ views = {
     "Santa Clara County": "37.2066118,-121.8113602,9.78z",
     "United States": "40.094099,-98.3882497,4z"
 }
+scores = {
+    "California": 143.2,
+    "Santa Clara County": 8.58,
+    "United States": 508.7
+}
 
-def play_game():
-    a = BirdAPI(regions[region])
+def score(d):
+    return 5000 * exp(-d/scores[REGION])
+
+def play_game(n_games):
+    a = BirdAPI(regions[REGION])
     g = None
-    while True:
+    s = []
+    for i in range(n_games):
         a.new_checklist()
         print(a.get_checklist(), end="")
         lon, lat, name = a.get_location()
 
         if g is None:
-            g = GMap(views[region])
+            g = GMap(views[REGION])
 
         guess = g.wait_click_pin()
         g.show_true(guess, (lon, lat))
         print(name)
-        print(f"Your guess was off by distance {g.distance(guess, (lon, lat))} km")
-        if input("new game (Y/n): ") == "n":
+        dist = g.distance(guess, (lon, lat))
+        s.append(score(dist))
+        print(f"{s[-1]:0.0f} points. Your guess was off by distance {g.distance(guess, (lon, lat)):.2f} km")
+        if i+1 == n_games or input(f"Continue game? You just finished round {i+1} out of {n_games} (Y/n): ") == "n":
             g.close()
             break
         g.reset()
+    print(f"Your total score was {sum(s):0.0f}/{5000 * n_games}.")
 
-play_game()
+play_game(N_GAMES)
