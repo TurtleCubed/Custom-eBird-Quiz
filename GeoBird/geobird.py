@@ -3,12 +3,14 @@ from map import GMap
 from math import exp
 
 REGION = "United States"
-N_GAMES = 5
+N_GAMES = 2
 
 # TODO fetch all checklists in advance
 # TODO show locations guessed and stuff like that (end of game screen)
 # TODO show checklist comments for the lols
 # TODO make api key secret
+# TODO different zooms? z17 or z15?
+# TODO multiplayer?
 
 regions = {
     "California": "US-CA",
@@ -48,9 +50,9 @@ def play_game(n_games):
         s.append(score(dist))
         print(f"{s[-1]:0.0f} points. Your guess was off by distance {g.distance(guess, (lon, lat)):.2f} km")
         if i+1 == n_games or input(f"Continue game? You just finished round {i+1} out of {n_games} (Y/n): ") == "n":
-            g.close()
             break
         g.reset()
-    print(f"Your total score was {sum(s):0.0f}/{5000 * n_games}.")
+    input(f"Your total score was {sum(s):0.0f}/{5000 * (i+1)}. Press enter to exit the game.")
+    g.close()
 
 play_game(N_GAMES)
