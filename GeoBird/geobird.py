@@ -3,13 +3,13 @@ from map import GMap
 from math import exp
 
 REGION = "United States"
-N_GAMES = 2
+N_GAMES = 5
 
 # TODO fetch all checklists in advance
 # TODO show locations guessed and stuff like that (end of game screen)
 # TODO show checklist comments for the lols
 # TODO make api key secret
-# TODO different zooms? z17 or z15?
+# TODO change pin check from 15/17z to real check
 # TODO multiplayer?
 
 regions = {
