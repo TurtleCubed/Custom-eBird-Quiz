@@ -11,6 +11,7 @@ N_GAMES = 5
 # TODO make api key secret
 # TODO change pin check from 15/17z to real check
 # TODO multiplayer?
+# TODO different browsers?
 
 regions = {
     "California": "US-CA",
@@ -25,18 +26,17 @@ views = {
 scores = {
     "California": 143.2,
     "Santa Clara County": 8.58,
-    "United States": 508.7
+    "United States": 832.8
 }
 
 def score(d):
     return 5000 * exp(-d/scores[REGION])
 
 def play_game(n_games):
-    a = BirdAPI(regions[REGION])
+    a = BirdAPI(regions[REGION], n_games)
     g = None
     s = []
     for i in range(n_games):
-        a.new_checklist()
         print(a.get_checklist(), end="")
         lon, lat, name = a.get_location()
 

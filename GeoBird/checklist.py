@@ -3,37 +3,90 @@ import json
 from json.decoder import JSONDecodeError
 from calendar import monthrange
 from random import randint
+from threading import Thread
 
 class BirdAPI:
-	def __init__(self, region):
+	def __init__(self, region, n):
 		self.conn = http.client.HTTPSConnection("api.ebird.org")
 		self.payload = ''
 		self.headers = {
 			'X-eBirdApiToken': '6c8plv8d6h6b'
 		}
+		self.load_total = n
+		self.i = 0
+		self.checklists = []
+		self.locs = []
+		self.tax = {}
 		self.curr_checklist = None
 		self.min_species = 20
 		self.region = region
+		self.begin_thread()
 
-	def get_checklist(self):
-		if self.curr_checklist is None:
-			self.new_checklist()
-		return self.curr_checklist["obsDt"] + " https://ebird.org/checklist/" + self.curr_checklist["subId"] + "\n" + self.specieslist(self.curr_checklist)
+	def begin_thread(self):
+		"""Begin a new thread that fetches until we have the desired number of checklists"""
+		Thread(target=self.fetch_until_stop).start()
 
-	def get_location(self):
-		return self.hotspotloc(self.curr_checklist)
-
-	def new_checklist(self):
-		for _ in range(10):
+	def fetch_until_stop(self):
+		"""Fetch checklists until we have the desired number."""
+		n_fail = 0
+		while n_fail < 10 and len(self.checklists) < self.load_total:
 			y = randint(2000, 2022)
 			m = randint(1, 12)
 			d = randint(1, monthrange(y, m)[1])
-			self.curr_checklist = self.filterspecies(self.getchecklists(self.region, y, m, d), self.min_species)
-			if self.curr_checklist:
-				return
-		# print(self.curr_checklist)
-		print(f"Unable to find checklist in region {self.region} with species list of at least {self.min_species}!")
-		assert self.curr_checklist
+			checklists = self.getchecklists(self.region, y, m, d)
+			for c in checklists:
+				clist = self.lookup(f"/v2/product/checklist/view/{c['subID']}")
+				if len(clist["obs"]) >= self.min_species and self.percent_X(clist["obs"]) < 0.5:
+					if clist not in self.checklists and self.process_checklist(clist):
+						self.checklists.append(clist)
+				if len(self.checklists) == self.load_total:
+					break
+			n_fail += 1
+		if n_fail >= 10:
+			print(f"Unable to find checklist in region {self.region} with species list of at least {self.min_species}!")
+			assert n_fail < 10
+
+	def percent_X(self, obs):
+		X = 0
+		for sp in obs:
+			if str(sp["howManyStr"]) == "X":
+				X += 1
+		return X / len(obs)
+
+	def process_checklist(self, checklist):
+		self.locs.append(self.hotspotloc(checklist))
+		if self.locs[-1] is None:
+			self.locs.pop()
+			return False
+		for sp in checklist["obs"]:
+			if sp["speciesCode"] not in self.tax:
+				self.tax[sp["speciesCode"]] = self.taxonomy(sp["speciesCode"])
+		return True
+
+	def get_checklist(self):
+		if len(self.checklists) <= self.i:
+			print("Loading checklist... please wait.")
+		while len(self.checklists) <= self.i:
+			pass
+		curr_checklist = self.checklists[self.i]
+		return curr_checklist["obsDt"] + " https://ebird.org/checklist/" + curr_checklist["subId"] + "\n" + self.specieslist(curr_checklist)
+
+	def get_location(self):
+		self.i += 1
+		return self.locs[self.i-1]
+
+	# def new_checklist(self):
+	# 	for _ in range(10):
+	# 		y = randint(2000, 2022)
+	# 		m = randint(1, 12)
+	# 		d = randint(1, monthrange(y, m)[1])
+	# 		self.curr_checklist = self.filterspecies(self.getchecklists(self.region, y, m, d), self.min_species)
+	# 		print(self.curr_checklist)
+	# 		if self.curr_checklist:
+	# 			return
+	# 	# print(self.curr_checklist)
+	# 	print(f"Unable to find checklist in region {self.region} with species list of at least {self.min_species}!")
+	# 	assert self.curr_checklist
 
 	# Below are lookup tools
 
@@ -57,21 +110,18 @@ class BirdAPI:
 		query = f"/v2/product/lists/{region}/{y}/{m}/{d}?maxResults=200"
 		return self.lookup(query)
 
-	def filterspecies(self, checklists, minspecies):
-		for c in checklists:
-			clist = self.lookup(f"/v2/product/checklist/view/{c['subID']}")
-			if len(clist["obs"]) >= minspecies and self.lookup(f"/v2/ref/hotspot/info/{clist['locId']}"):
-				return clist
-
 	def specieslist(self, clist):
 		out = ""
 		for sp in clist["obs"]:
-			out += str(sp["howManyStr"]) + " " + self.taxonomy(sp["speciesCode"]) + "\n"
-			if "comment" in sp:
-				out += "\t" + str(sp["comment"]) + "\n"
+			out += str(sp["howManyStr"]) + " " + self.tax[sp["speciesCode"]]
+			if "comments" in sp:
+				out += ": " + str(sp["comments"]) + "\n"
+			else:
+				out += "\n"
 		return out
 
 	def hotspotloc(self, checklist):
 		hotspot = self.lookup(f"/v2/ref/hotspot/info/{checklist['locId']}")
+		if not hotspot:
+			return None
 		return hotspot["latitude"], hotspot["longitude"], hotspot["hierarchicalName"]
-
