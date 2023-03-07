@@ -6,20 +6,27 @@ from random import randint
 from threading import Thread
 
 class BirdAPI:
-	def __init__(self, region, n):
+	def __init__(self, region, n, gameinfo=None):
+		if gameinfo:
+			self.load_total = len(gameinfo["Checklists"])
+			self.region = gameinfo["Region"]
+			self.checklist_codes = gameinfo["Checklists"]
+		else:
+			self.load_total = n
+			self.region = region
+			self.checklist_codes = []
+
 		self.conn = http.client.HTTPSConnection("api.ebird.org")
 		self.payload = ''
 		self.headers = {
 			'X-eBirdApiToken': '6c8plv8d6h6b'
 		}
-		self.load_total = n
 		self.i = 0
 		self.checklists = []
 		self.locs = []
 		self.tax = {}
 		self.curr_checklist = None
-		self.min_species = 20
-		self.region = region
+		self.min_species = 10
 		self.begin_thread()
 
 	def begin_thread(self):
@@ -33,12 +40,19 @@ class BirdAPI:
 			y = randint(2000, 2022)
 			m = randint(1, 12)
 			d = randint(1, monthrange(y, m)[1])
-			checklists = self.getchecklists(self.region, y, m, d)
+			checklists = self.checklist_codes if len(self.checklist_codes) >= self.load_total \
+							else self.getchecklists(self.region, y, m, d)
 			for c in checklists:
-				clist = self.lookup(f"/v2/product/checklist/view/{c['subID']}")
+				if type(c) == str:
+					clist = self.lookup(f"/v2/product/checklist/view/{c}")
+				else:
+					clist = self.lookup(f"/v2/product/checklist/view/{c['subID']}")
 				if len(clist["obs"]) >= self.min_species and self.percent_X(clist["obs"]) < 0.5:
 					if clist not in self.checklists and self.process_checklist(clist):
 						self.checklists.append(clist)
+						if c not in self.checklist_codes:
+							self.checklist_codes.append(c['subID'])
+						break
 				if len(self.checklists) == self.load_total:
 					break
 			n_fail += 1
@@ -65,7 +79,7 @@ class BirdAPI:
 
 	def get_checklist(self):
 		if len(self.checklists) <= self.i:
-			print("Loading checklist... please wait.")
+			print("Loading checklists... please wait.")
 		while len(self.checklists) <= self.i:
 			pass
 		curr_checklist = self.checklists[self.i]
