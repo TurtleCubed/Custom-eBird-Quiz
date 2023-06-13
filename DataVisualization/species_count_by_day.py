@@ -17,6 +17,8 @@ for fn in dir_list:
     loaded_json = json.load(f)
     f.close()
 
+    if fn[-3] != "_":
+        continue
     date = datetime.strptime(fn[-10:], "%Y_%m_%d")
 
     if fn.startswith('species_'):
@@ -25,7 +27,9 @@ for fn in dir_list:
         dates.append(date)
         checklist_count.append(len(loaded_json))
 
-plt.plot(dates, species_count, 'r-', dates, checklist_count, 'b-')
+plt.plot(dates, species_count, 'r-', label="Species")
+plt.plot(dates, checklist_count, 'b-', label="Checklists")
+plt.legend()
 plt.gcf().autofmt_xdate()
 plt.show()
 
