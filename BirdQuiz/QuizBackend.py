@@ -1,5 +1,6 @@
 from selenium import webdriver
 from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.driver_cache import DriverCacheManager
 import requests
 from PIL import Image
 from selenium.common.exceptions import NoSuchElementException
@@ -19,16 +20,9 @@ class QuizBackend():
     def __init__(self, questions=20, download=False, from_file=False):
         super().__init__()
         self.event = Event()
-        if not from_file:
-            # Open Browser and set parameters
-            chrome_options = self.get_headless_options()
-            self.browser = webdriver.Chrome(ChromeDriverManager(path="./resources").install(), options=chrome_options)
-            self.browser.minimize_window()
-            self.browser.get('https://media.ebird.org/catalog?view=grid&mediaType=photo')
-            self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
 
         # Sort species
-        self.alpha_species = sorted([x[:-1].strip() for x in open("species.txt", "r").readlines() if x[:-1].strip()])
+        self.alpha_species = sorted(set([x[:-1].strip() for x in open("species.txt", "r").readlines() if x[:-1].strip()]))
         self.species = []
         self.imgs = []
         self.guesses = []
@@ -39,7 +33,26 @@ class QuizBackend():
         self.questions = questions
         self.i = 0
         self.correct = 0
-        self.begin_thread()
+
+        self.browser_thread = Thread(target=self.open_browser)
+        self.browser_thread.start()
+
+        
+        self.transform = lambda x: x
+
+    def add_black_white(self):
+        """Add a black and white transformation"""
+        self.transform = lambda im: im.convert('L')
+
+    def open_browser(self):
+        """Open the browser in headless mode and navigate to Macaulay library"""
+        if not self.from_file:
+            # Open Browser and set parameters
+            chrome_options = self.get_headless_options()
+            self.browser = webdriver.Chrome(ChromeDriverManager(cache_manager=DriverCacheManager(root_dir="./resources")).install(), options=chrome_options)
+            self.browser.minimize_window()
+            self.browser.get('https://media.ebird.org/catalog?view=grid&mediaType=photo')
+            self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
 
     def get_headless_options(self):
         """Returns an options object with special configurations for headless running."""
@@ -60,7 +73,7 @@ class QuizBackend():
         """Return the image for the current species to guess."""
         while self.i + 1 >= len(self.imgs): # Wait for fetch to get the correct image
             pass
-        return self.imgs[self.i]
+        return self.transform(self.imgs[self.i])
 
     def get_species(self):
         """Get the current species name."""
@@ -84,6 +97,8 @@ class QuizBackend():
 
     def fetch_until_stop(self):
         """Fetch images until we have the desired number of bird images."""
+        while self.browser_thread.is_alive(): # While the browser is not yet open
+            pass
         while len(self.species) <= self.questions:
             self.fetch()
         if not self.from_file:

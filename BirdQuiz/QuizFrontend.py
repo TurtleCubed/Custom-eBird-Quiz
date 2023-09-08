@@ -6,6 +6,8 @@ from ttkwidgets.autocomplete import AutocompleteEntryListbox
 # TODO impossible: birdie style
 # TODO hard Case insensitive autofill?, zoom
 # TODO easy: photo start/end screen, nice answer right or wrong, colors on words
+# TODO doesn't count! bad photo.
+# TODO add species validity verification
 
 class QuizFrontend:
     def __init__(self):
@@ -20,18 +22,14 @@ class QuizFrontend:
         self.image = Label(self.root)
         self.field = AutocompleteEntryListbox(self.root)
         self.button = Button(self.root)
-        # Variable stating whether the quiz has begun
-        self.mid_quiz = False
-        # Being the quiz!
+        # Begin the quiz!
         self.show_intro()
 
     def show_intro(self):
-        """Set various window parameters and show the intro screen, 
-        and begin looking up bird images in the background."""
+        """Set various window parameters and show the intro screen where you can configure settings."""
         self.root.title("BirdQuiz")
         self.root.geometry('1280x720')
         self.label.configure(text = "Welcome to BirdQuiz! Press play to begin:")
-        self.button.configure(text = 'Play', bd = '5', command = self.next_question)
 
         im = self.resize_to_tk(Image.open("./resources/intro.jpg"))
         self.image = Label(self.root, image=im)
@@ -39,10 +37,63 @@ class QuizFrontend:
 
         self.label.grid(row = 0, column = 0, sticky = W, pady = 2)
         self.button.grid(row=0, column=1, sticky=W, pady=2)
-        self.image.grid(row=1, column=0, columnspan=2, padx=5, pady=5)
+        self.image.grid(row=1, column=0, columnspan=4, rowspan=2, padx=5, pady=5)
 
-        self.root.after(1, self.set_backend())
+        self.set_backend()
+
+        # List of species and input box for additional species
+        inputbox = Text(self.root, width=30, height=1)
+        inputbox.grid(row=1, column=4)
+        listbox = Listbox(self.root, width=30, height=28, selectmode="multiple")
+        listbox.grid(row=2, column=4, columnspan=3, padx=5, pady=5)
+        listbox.insert(0, *self.backend.alpha_species)
+        # Buttons to add/remove species
+        addbutton = Button(self.root, width=1, height=1)
+        addbutton.grid(row=1, column=5)
+        addbutton.configure(text = '+', bd = '4', command = lambda: [listbox.insert(0, inputbox.get("1.0", "end")), inputbox.delete("1.0", "end")])
+        self.root.bind('<Return>', lambda _: [listbox.insert(0, inputbox.get("1.0", "end")), inputbox.delete("1.0", "end")])
+        rmbutton = Button(self.root, width=1, height=1)
+        rmbutton.grid(row=1, column=6)
+        rmbutton.configure(text = '-', bd = '4', command = lambda: [listbox.delete(x) for x in reversed(listbox.curselection())])
+
+        # Black and white checkbox
+        self.bw_var = IntVar()
+        bw_checkbox = Checkbutton(self.root, text="Black and White", variable=self.bw_var, onvalue=1, offvalue=0)
+        bw_checkbox.grid(row=3, column=0)
+
+        # Number of questions
+        num_q_label = Label(self.root, text="Num Questions:")
+        num_q_label.grid(row=0, column=2)
+        self.num_q = Text(self.root, width=3, height=1)
+        self.num_q.grid(row=0, column=3)
+        self.num_q.insert("end", str(self.backend.questions))
+
+        self.intro_widgets = [inputbox, listbox, addbutton, rmbutton, bw_checkbox, self.num_q, num_q_label]
+
+        self.button.configure(text = 'Play', bd = '5', command = lambda : self.start_game(listbox.get(0, "end")))
+
         self.root.mainloop()
+
+    def start_game(self, species):
+        """Begin the game, by removing intro screen information and booting the backend."""
+        self.backend.questions = int(self.num_q.get("1.0", "end").strip())
+        if self.bw_var.get() == 1:
+            self.backend.add_black_white()
+        for w in self.intro_widgets:
+            w.destroy()
+        self.button.configure(text = "Loading...")
+        self.backend.alpha_species = sorted(set(species))
+        self.backend.begin_thread()
+
+        self.button.grid_forget()
+        self.label.configure(text = "Your Answer:")
+        self.field.configure(width = 30, height=28, completevalues=self.backend.alpha_species)
+        self.label.grid(row = 1, column = 1, sticky="ew")
+        self.field.grid(row = 2, column = 1, sticky="ew")
+        self.score.grid(row=0, column=1, sticky="ew")
+        self.image.grid(row=0, column=0, columnspan=1, rowspan=3, padx=5, pady=5)
+        self.mid_quiz = True
+        self.next_question()
 
     def set_backend(self):
         """Called lazily"""
@@ -63,20 +114,11 @@ class QuizFrontend:
         if img is None:
             img = self.get_tkimg()
         self.image.configure(image=img)
-        self.image.photo = img
-        if not self.mid_quiz:
-            self.button.grid_forget()
-            self.label.configure(text = "Your Answer:")
-            self.field.configure(width = 30, completevalues=self.backend.alpha_species)
-            self.label.grid(row = 0, column = 0, sticky = W, pady = 2)
-            self.field.grid(row = 0, column = 1, sticky = W, pady = 2)
-            self.score.grid(row=0, column=2, sticky = W, pady = 2)
-            self.image.grid(row=1, column=0, columnspan=3, padx=5, pady=5)
-            self.mid_quiz = True
-        else:
-            self.answer_text.grid_forget()
-            self.field.grid(row = 0, column = 1, sticky = W, pady = 2)
-            self.score.configure(text="{}/{}".format(self.backend.correct, self.backend.i))
+        self.image.photo = Image
+        self.answer_text.grid_forget()
+        self.label.grid(row=1, column=1, sticky="ew")
+        self.field.grid(row = 2, column = 1, sticky = "ew")
+        self.score.configure(text="{}/{}".format(self.backend.correct, self.backend.i))
         self.root.bind('<Return>', lambda x: self.submit())
         self.root.mainloop()
 
@@ -95,7 +137,8 @@ class QuizFrontend:
         else:
             self.answer_text.configure(text="{} is wrong, it's actually {}!".format(self.field.get(), self.backend.get_species()))
         self.score.configure(text="{}/{}, Enter to continue.".format(self.backend.correct, self.backend.i + 1))
-        self.answer_text.grid(row = 0, column = 1, sticky = W, pady = 2)
+        self.label.grid_forget()
+        self.answer_text.grid(row = 1, column = 1, sticky="ew")
         
         # Reset for next question
         if self.backend.i + 1 < self.backend.questions:
