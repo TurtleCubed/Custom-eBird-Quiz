@@ -172,7 +172,8 @@ class QuizFrontend:
         self.root.mainloop()
 
     
-
+    def add_to_listbox(self, inputbox, listbox):
+        pass
     
 
     
