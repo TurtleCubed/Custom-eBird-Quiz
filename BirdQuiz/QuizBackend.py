@@ -1,6 +1,5 @@
 from selenium import webdriver
-from webdriver_manager.chrome import ChromeDriverManager
-from webdriver_manager.core.driver_cache import DriverCacheManager
+from selenium.webdriver.chrome.service import Service
 import requests
 from PIL import Image
 from selenium.common.exceptions import NoSuchElementException
@@ -48,8 +47,10 @@ class QuizBackend():
         """Open the browser in headless mode and navigate to Macaulay library"""
         if not self.from_file:
             # Open Browser and set parameters
+            service = Service()
             chrome_options = self.get_headless_options()
-            self.browser = webdriver.Chrome(ChromeDriverManager(cache_manager=DriverCacheManager(root_dir="./resources")).install(), options=chrome_options)
+            # self.browser = webdriver.Chrome(ChromeDriverManager(cache_manager=DriverCacheManager(root_dir="./resources")).install(), options=chrome_options)
+            self.browser = webdriver.Chrome(service=service, options=chrome_options)
             self.browser.minimize_window()
             self.browser.get('https://media.ebird.org/catalog?view=grid&mediaType=photo')
             self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
