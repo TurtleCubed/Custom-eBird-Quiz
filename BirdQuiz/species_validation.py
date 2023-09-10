@@ -66,4 +66,7 @@ if __name__ == "__main__":
     v = Validate()
     print("\"Wood Thrush\" is valid: " + str(v.validate("Wood Thrush")))
     print("\"Aaron Sun\" is valid: " + str(v.validate("Aaron Sun")))
-    print("search results for \"woth\": " + str(v.search("woth")))
+    prompt = input("Enter a Bird to search for (enter \"q\" to quit):\n")
+    while prompt != "q":
+        print("search results for \"" + prompt + "\": " + str(v.search(prompt)))
+        prompt = input("Enter a Bird to search for (enter \"q\" to quit):\n")
