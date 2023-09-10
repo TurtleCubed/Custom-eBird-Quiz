@@ -22,6 +22,7 @@ class Validate():
             f.write(requests.get(CHECKLIST_URL).content)
 
     def validate(self, name: str):
+        """Very basic set check"""
         return name in self.species_set
 
 

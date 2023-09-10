@@ -175,6 +175,7 @@ class QuizFrontend:
 
     
     def add_to_listbox(self, inputbox, listbox):
+        """Moves text from the inputbox to the listbox with some text validation"""
         text = inputbox.get("1.0", "end").strip().title()
         if self.name_validator.validate(text):
             listbox.insert(0, text)
