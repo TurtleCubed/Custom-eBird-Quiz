@@ -28,5 +28,5 @@ class Validate():
 
 if __name__ == "__main__":
     v = Validate()
-    print("\"Common Ostrich\" is valid: " + str(v.validate("Common Ostrich")))
+    print("\"Wood Thrush\" is valid: " + str(v.validate("Wood Thrush")))
     print("\"Aaron Sun\" is valid: " + str(v.validate("Aaron Sun")))

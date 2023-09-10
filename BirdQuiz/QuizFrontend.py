@@ -1,6 +1,7 @@
 from tkinter import *
 from PIL import ImageTk, Image
 from QuizBackend import QuizBackend
+from species_validation import Validate
 from ttkwidgets.autocomplete import AutocompleteEntryListbox
 
 # TODO impossible: birdie style
@@ -22,6 +23,7 @@ class QuizFrontend:
         self.image = Label(self.root)
         self.field = AutocompleteEntryListbox(self.root)
         self.button = Button(self.root)
+        self.name_validator = Validate()
         # Begin the quiz!
         self.show_intro()
 
@@ -31,7 +33,7 @@ class QuizFrontend:
         self.root.geometry('1280x720')
         self.label.configure(text = "Welcome to BirdQuiz! Press play to begin:")
 
-        im = self.resize_to_tk(Image.open("./resources/intro.jpg"))
+        im = self.resize_to_tk(Image.open("./BirdQuiz/resources/intro.jpg"))
         self.image = Label(self.root, image=im)
         self.image.photo = im
 
@@ -50,8 +52,8 @@ class QuizFrontend:
         # Buttons to add/remove species
         addbutton = Button(self.root, width=1, height=1)
         addbutton.grid(row=1, column=5)
-        addbutton.configure(text = '+', bd = '4', command=self.add_to_listbox)
-        self.root.bind('<Return>', self.add_to_listbox)
+        addbutton.configure(text = '+', bd = '4', command=lambda i=inputbox, l=listbox: self.add_to_listbox(i, l))
+        self.root.bind('<Return>', lambda i=inputbox, l=listbox: self.add_to_listbox(i, l))
         rmbutton = Button(self.root, width=1, height=1)
         rmbutton.grid(row=1, column=6)
         rmbutton.configure(text = '-', bd = '4', command = lambda: [listbox.delete(x) for x in reversed(listbox.curselection())])
@@ -173,12 +175,12 @@ class QuizFrontend:
 
     
     def add_to_listbox(self, inputbox, listbox):
-        text = inputbox.get("1.0", "end")
-        if text == '':
-            pass
-        else:
+        text = inputbox.get("1.0", "end").strip().title()
+        if self.name_validator.validate(text):
             listbox.insert(0, text)
-            inputbox.delete("1.0", "end")
+            inputbox.delete("1.0", "end")   
+        else:
+            print(text + " is an invalid species name")
     
 
     
