@@ -9,14 +9,14 @@ class Validate():
 
     def __init__(self) -> None:
         """Gets the 2022 taxononmy, and initalizes the validation set"""
-        if not os.path.isfile("BirdQuiz/resources/" + CHECKLIST_NAME):
+        if not os.path.isfile("./resources/" + CHECKLIST_NAME):
             self.get_checklist_from_url()
-        df = pd.read_csv("BirdQuiz/resources/" + CHECKLIST_NAME)
+        df = pd.read_csv("./resources/" + CHECKLIST_NAME)
         self.species_set = set(df["PRIMARY_COM_NAME"])
 
     def get_checklist_from_url(self):
         """Downloads the 2022 eBird taxonomy list to resources"""
-        with open(CHECKLIST_NAME, "wb") as f:
+        with open("./resources/" + CHECKLIST_NAME, "wb") as f:
             f.write(requests.get(CHECKLIST_URL).content)
 
     def validate(self, name: str):
