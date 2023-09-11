@@ -3,6 +3,7 @@ from PIL import Image
 from random import sample, randint
 from threading import Thread, Event
 import os, datetime
+from species_validation import Validate
 
 # TODO: probabilistic sampling of species
 # TODO: change species name navigation to use URL search
@@ -100,6 +101,13 @@ class QuizBackend():
         return self.load_imgs(num_imgs)
 
     def search_bird(self, species_name):
+        """Search the species with requests"""
+        url = f'https://media.ebird.org/api/v2/search?taxonCode={birdid}&sort=rating_rank_desc&mediaType=photo&birdOnly=true'
+        out = requests.get(url, cookies={'ml-search-session': 'eyJ1c2VyIjp7ImFub255bW91cyI6dHJ1ZX19', 'ml-search-session.sig': 'XZPO3pJ50PRL94J3OagC3Bg1IVk'})
+        out = [x['assetId'] for x in out.json()]
+        imgurls = [f'https://cdn.download.ams.birds.cornell.edu/api/v1/asset/{i}/' for i in out]
+        return imgurls
+        
         """Search the species in the browser"""
         # Clear search bar
         self.clear_search()
