@@ -1,7 +1,6 @@
 numpy==1.25.2
 pandas==2.1.0
 Pillow==10.0.0
-Pillow==10.0.0
 Requests==2.31.0
 selenium==4.12.0
 ttkwidgets==0.12.1
