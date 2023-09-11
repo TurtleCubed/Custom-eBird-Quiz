@@ -33,7 +33,7 @@ class QuizFrontend:
         self.root.geometry('1280x720')
         self.label.configure(text = "Welcome to BirdQuiz! Press play to begin:")
 
-        im = self.resize_to_tk(Image.open("./BirdQuiz/resources/intro.jpg"))
+        im = self.resize_to_tk(Image.open("./resources/intro.jpg"))
         self.image = Label(self.root, image=im)
         self.image.photo = im
 
