@@ -1,6 +1,7 @@
 from tkinter import *
 from PIL import ImageTk, Image
 from QuizBackend import QuizBackend
+from species_validation import Validate
 from ttkwidgets.autocomplete import AutocompleteEntryListbox
 
 # TODO impossible: birdie style
@@ -22,6 +23,7 @@ class QuizFrontend:
         self.image = Label(self.root)
         self.field = AutocompleteEntryListbox(self.root)
         self.button = Button(self.root)
+        self.name_validator = Validate()
         # Begin the quiz!
         self.show_intro()
 
@@ -50,8 +52,8 @@ class QuizFrontend:
         # Buttons to add/remove species
         addbutton = Button(self.root, width=1, height=1)
         addbutton.grid(row=1, column=5)
-        addbutton.configure(text = '+', bd = '4', command = lambda: [listbox.insert(0, inputbox.get("1.0", "end")), inputbox.delete("1.0", "end")])
-        self.root.bind('<Return>', lambda _: [listbox.insert(0, inputbox.get("1.0", "end")), inputbox.delete("1.0", "end")])
+        addbutton.configure(text = '+', bd = '4', command=lambda _, i=inputbox, l=listbox: self.add_to_listbox(i, l))
+        self.root.bind('<Return>', lambda _, i=inputbox, l=listbox: self.add_to_listbox(i, l))
         rmbutton = Button(self.root, width=1, height=1)
         rmbutton.grid(row=1, column=6)
         rmbutton.configure(text = '-', bd = '4', command = lambda: [listbox.delete(x) for x in reversed(listbox.curselection())])
@@ -172,7 +174,14 @@ class QuizFrontend:
         self.root.mainloop()
 
     
-
+    def add_to_listbox(self, inputbox, listbox):
+        """Moves text from the inputbox to the listbox with some text validation"""
+        text = inputbox.get("1.0", "end").strip()
+        if self.name_validator.validate(text):
+            listbox.insert(0, text)
+        else:
+            print(text + " is an invalid species name")
+        inputbox.delete("1.0", "end")  
     
 
     
