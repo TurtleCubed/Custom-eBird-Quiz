@@ -181,6 +181,7 @@ class QuizFrontend:
             listbox.insert(0, text)
             inputbox.delete("1.0", "end")   
         else:
+            inputbox.delete("1.0", "end")
             print(text + " is an invalid species name")
     
 
