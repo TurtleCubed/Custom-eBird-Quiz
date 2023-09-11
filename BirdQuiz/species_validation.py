@@ -1,7 +1,5 @@
 import requests
 import pandas as pd
-from pandas import DataFrame
-from fast_autocomplete import AutoComplete
 import os
 
 CHECKLIST_URL = "https://com-aab-media.s3.amazonaws.com/common/ebird_taxonomy_v2022.csv"
