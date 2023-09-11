@@ -180,10 +180,10 @@ class QuizFrontend:
         text = inputbox.get("1.0", "end").strip()
         if self.name_validator.validate(text):
             listbox.insert(0, text)
-            inputbox.delete("1.0", "end")   
         else:
-            inputbox.delete("1.0", "end")
             print(text + " is an invalid species name")
+        inputbox.delete("1.0", "end")  
+    
 
 
 if __name__ == "__main__":
