@@ -8,6 +8,7 @@ import csv
 from io import BytesIO
 
 # TODO: probabilistic sampling of species
+# TODO: error handling
 
 class QuizBackend():
     """
@@ -119,8 +120,7 @@ class QuizBackend():
         return imgurls
 
     def load_ebird_taxonomy(self, path=Path("resources", "ebird_taxonomy_v2022.csv")):
-        '''Load a dictonary copy of the eBird Taxonomy. The url search uses bird ID instead of species name
-        TODO: download the taxonomy if it does not already exist'''
+        '''Load a dictonary copy of the eBird Taxonomy. The url search uses bird ID instead of species name'''
         with open(path, 'r') as f:
             taxon = csv.reader(f)
             for l in taxon:
