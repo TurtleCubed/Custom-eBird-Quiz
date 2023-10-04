@@ -110,7 +110,7 @@ class QuizBackend():
         return img if num_imgs == 1 else imgs
     
     def get_urls(self, birdid):
-        '''Skip the web browser and use the URL search'''
+        '''Get a list of 30 URLs for a particular species from the URL search.'''
         # Set random month
         month = randint(1, 12)
         url = f'https://media.ebird.org/api/v2/search?taxonCode={birdid}&sort=rating_rank_desc&mediaType=photo&birdOnly=true&beginMonth={month}'
