@@ -3,6 +3,7 @@ from PIL import ImageTk, Image
 from QuizBackend import QuizBackend
 from species_validation import Validate
 from ttkwidgets.autocomplete import AutocompleteEntryListbox
+from pathlib import Path
 
 # TODO impossible: birdie style
 # TODO hard Case insensitive autofill?, zoom
@@ -33,7 +34,7 @@ class QuizFrontend:
         self.root.geometry('1280x720')
         self.label.configure(text = "Welcome to BirdQuiz! Press play to begin:")
 
-        im = self.resize_to_tk(Image.open("./resources/intro.jpg"))
+        im = self.resize_to_tk(Image.open(Path("resources", "intro.jpg")))
         self.image = Label(self.root, image=im)
         self.image.photo = im
 
@@ -184,6 +185,6 @@ class QuizFrontend:
         inputbox.delete("1.0", "end")  
     
 
-    
 
-a = QuizFrontend()
+if __name__ == "__main__":
+    a = QuizFrontend()
