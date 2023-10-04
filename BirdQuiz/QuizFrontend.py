@@ -53,8 +53,8 @@ class QuizFrontend:
         # Buttons to add/remove species
         addbutton = Button(self.root, width=1, height=1)
         addbutton.grid(row=1, column=5)
-        addbutton.configure(text = '+', bd = '4', command=lambda _, i=inputbox, l=listbox: self.add_to_listbox(i, l))
-        self.root.bind('<Return>', lambda _, i=inputbox, l=listbox: self.add_to_listbox(i, l))
+        addbutton.configure(text = '+', bd = '4', command=lambda i=inputbox, l=listbox: self.add_to_listbox(i, l))
+        self.root.bind('<Return>', lambda i=inputbox, l=listbox: self.add_to_listbox(i, l))
         rmbutton = Button(self.root, width=1, height=1)
         rmbutton.grid(row=1, column=6)
         rmbutton.configure(text = '-', bd = '4', command = lambda: [listbox.delete(x) for x in reversed(listbox.curselection())])
@@ -182,6 +182,7 @@ class QuizFrontend:
             listbox.insert(0, text)
         else:
             print(text + " is an invalid species name")
+        inputbox.delete("1.0", "end")
 
 
 if __name__ == "__main__":
