@@ -1,9 +1,15 @@
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 import requests
 from PIL import Image
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
 from random import sample, randint
 from threading import Thread, Event
 import os, datetime
-from species_validation import Validate
+from pathlib import Path
+import csv
 
 # TODO: probabilistic sampling of species
 # TODO: change species name navigation to use URL search
@@ -29,15 +35,45 @@ class QuizBackend():
         self.i = 0
         self.correct = 0
 
-        self.browser_thread = Thread(target=self.open_browser)
-        self.browser_thread.start()
+        # self.browser_thread = Thread(target=self.open_browser)
+        # self.browser_thread.start()
 
+        # Get eBird codes and species names
+        self.taxon = {}
+        self.load_ebird_taxonomy()
         
         self.transform = lambda x: x
 
     def add_black_white(self):
         """Add a black and white transformation"""
         self.transform = lambda im: im.convert('L')
+
+    def open_browser(self):
+        """Open the browser in headless mode and navigate to Macaulay library"""
+        if not self.from_file:
+            # Open Browser and set parameters
+            service = Service()
+            chrome_options = self.get_headless_options()
+            # self.browser = webdriver.Chrome(ChromeDriverManager(cache_manager=DriverCacheManager(root_dir="./resources")).install(), options=chrome_options)
+            self.browser = webdriver.Chrome(service=service, options=chrome_options)
+            self.browser.minimize_window()
+            self.browser.get('https://media.ebird.org/catalog?view=grid&mediaType=photo')
+            self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
+
+    def get_headless_options(self):
+        """Returns an options object with special configurations for headless running."""
+        chrome_options = Options()
+        # This line hides the browser
+        user_agent = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3112.50 Safari/537.36'
+        chrome_options.add_argument(f'user-agent={user_agent}')
+        chrome_options.add_argument('--no-sandbox')
+        chrome_options.add_argument('--window-size=1920,1080')
+        chrome_options.add_argument('--headless')
+        chrome_options.add_argument('--disable-gpu')
+        chrome_options.add_argument('--allow-running-insecure-content')
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument('log-level=2')
+        return chrome_options
 
     def get_current(self):
         """Return the image for the current species to guess."""
@@ -101,13 +137,6 @@ class QuizBackend():
         return self.load_imgs(num_imgs)
 
     def search_bird(self, species_name):
-        """Search the species with requests"""
-        url = f'https://media.ebird.org/api/v2/search?taxonCode={birdid}&sort=rating_rank_desc&mediaType=photo&birdOnly=true'
-        out = requests.get(url, cookies={'ml-search-session': 'eyJ1c2VyIjp7ImFub255bW91cyI6dHJ1ZX19', 'ml-search-session.sig': 'XZPO3pJ50PRL94J3OagC3Bg1IVk'})
-        out = [x['assetId'] for x in out.json()]
-        imgurls = [f'https://cdn.download.ams.birds.cornell.edu/api/v1/asset/{i}/' for i in out]
-        return imgurls
-        
         """Search the species in the browser"""
         # Clear search bar
         self.clear_search()
@@ -130,7 +159,6 @@ class QuizBackend():
         while len(self.browser.find_elements(By.CSS_SELECTOR, value='[class="ResultsGrid-card-image"]')) == 0:
             pass
 
-
     def load_imgs(self, num_imgs=1):
         """Download NUM_IMGS from searched images into memory"""
         imgs = []
@@ -145,3 +173,13 @@ class QuizBackend():
             img = Image.open(request.raw)#np.array(Image.open(request.raw))
             imgs.append(img)
         return img if num_imgs == 1 else imgs
+    
+    def load_ebird_taxonomy(self, path=Path("resources", "ebird_taxonomy_v2022.csv")):
+        with open(path, 'r') as f:
+            taxon = csv.reader(f)
+            for l in taxon:
+                self.taxon[l[3]] = l[2]
+
+if __name__ == "__main__":
+    q = QuizBackend()
+    print(q.taxon["Black-throated Green Warbler"])
