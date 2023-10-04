@@ -10,6 +10,7 @@ from threading import Thread, Event
 import os, datetime
 from pathlib import Path
 import csv
+from io import BytesIO
 
 # TODO: probabilistic sampling of species
 # TODO: change species name navigation to use URL search
@@ -133,48 +134,34 @@ class QuizBackend():
 
     def get_image(self, species_name, num_imgs=1):
         """Get a bird image for a particular species"""
-        self.search_bird(species_name)
-        return self.load_imgs(num_imgs)
+        return self.load_imgs(species_name, num_imgs)
 
-    def search_bird(self, species_name):
-        """Search the species in the browser"""
-        # Clear search bar
-        self.clear_search()
-        self.search_box.clear()
-        # Set random month
-        month = randint(1, 12)
-        self.browser.get(f'https://media.ebird.org/catalog?view=grid&mediaType=photo&beginMonth={month}')
-        self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
-        # Type species name, then wait for autofill suggestion
-        self.search_box.send_keys(species_name)
-        while len(self.browser.find_elements(by=By.ID, value="Suggest-suggestion-0")) == 0:
-            pass
-        suggestion0 = self.browser.find_element(by=By.ID, value="Suggest-suggestion-0")
-        suggestion0.click()
-        # Hit load more, then wait for the images to load
-        while len(self.browser.find_elements(by=By.CSS_SELECTOR, value='[class="Button u-margin-none"]')) == 0:
-            pass
-        more_button = self.browser.find_element(by=By.CSS_SELECTOR, value='[class="Button u-margin-none"]')
-        more_button.click()
-        while len(self.browser.find_elements(By.CSS_SELECTOR, value='[class="ResultsGrid-card-image"]')) == 0:
-            pass
-
-    def load_imgs(self, num_imgs=1):
+    def load_imgs(self, species_name, num_imgs=1):
         """Download NUM_IMGS from searched images into memory"""
         imgs = []
-        # These are <div> objects with images inside
-        divs = self.browser.find_elements(By.CSS_SELECTOR, value='[class="ResultsGrid-card-image"]')
-        assert len(divs) > 0
+        urls = self.get_urls(self.taxon[species_name])
+
         # Sampling randomly from this list
-        for i in sample(range(len(divs)), num_imgs):
-            # Read image into memory via some annoying means
-            element = divs[i].find_elements(By.TAG_NAME, "img")[0]
-            request = requests.get(element.get_attribute('src'), stream=True)
-            img = Image.open(request.raw)#np.array(Image.open(request.raw))
+        for url in sample(urls, num_imgs):
+            # Read image into memory
+            request = requests.get(url)
+            img = Image.open(BytesIO(request.content))#np.array(Image.open(request.raw))
             imgs.append(img)
         return img if num_imgs == 1 else imgs
     
+    def get_urls(self, birdid):
+        '''Skip the web browser and use the URL search'''
+        # Set random month
+        month = randint(1, 12)
+        url = f'https://media.ebird.org/api/v2/search?taxonCode={birdid}&sort=rating_rank_desc&mediaType=photo&birdOnly=true&beginMonth={month}'
+        out = requests.get(url, cookies={'ml-search-session': 'eyJ1c2VyIjp7ImFub255bW91cyI6dHJ1ZX19', 'ml-search-session.sig': 'XZPO3pJ50PRL94J3OagC3Bg1IVk'})
+        out = [x['assetId'] for x in out.json()]
+        imgurls = [f'https://cdn.download.ams.birds.cornell.edu/api/v1/asset/{i}/' for i in out]
+        return imgurls
+
     def load_ebird_taxonomy(self, path=Path("resources", "ebird_taxonomy_v2022.csv")):
+        '''Load a dictonary copy of the eBird Taxonomy. The url search uses bird ID instead of species name
+        TODO: download the taxonomy if it does not already exist'''
         with open(path, 'r') as f:
             taxon = csv.reader(f)
             for l in taxon:
@@ -182,4 +169,6 @@ class QuizBackend():
 
 if __name__ == "__main__":
     q = QuizBackend()
-    print(q.taxon["Black-throated Green Warbler"])
+    imgs = q.load_imgs('Black Tern', 3)
+    for img in imgs:
+        img.show()
