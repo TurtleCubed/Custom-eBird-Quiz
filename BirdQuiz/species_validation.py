@@ -2,7 +2,7 @@ import requests
 import pandas as pd
 from pandas import DataFrame
 from fast_autocomplete import AutoComplete
-import os
+from pathlib import Path
 
 CHECKLIST_URL = "https://com-aab-media.s3.amazonaws.com/common/ebird_taxonomy_v2022.csv"
 ABA_CHECKLIST_URL = "https://www.aba.org/wp-content/uploads/2020/03/ABA_Checklist-8.12.csv"
@@ -14,16 +14,16 @@ class Validate():
     def __init__(self) -> None:
         """Gets the 2022 taxononmy, and initalizes the set"""
         # Verify/download eBird and ABA checklists
-        if not os.path.isfile("BirdQuiz/resources/" + CHECKLIST_NAME):
+        if not Path.is_file(Path("resources", CHECKLIST_NAME)):
             self.get_checklist_from_url()
-        if not os.path.isfile("BirdQuiz/resources/" + ABA_CHECKLIST_NAME):
+        if not Path.is_file(Path("resources", ABA_CHECKLIST_NAME)):
             self.get_checklist_from_url(aba=True)
         # Load the eBird checklist
-        df = pd.read_csv("BirdQuiz/resources/" + CHECKLIST_NAME)
+        df = pd.read_csv(Path("resources", CHECKLIST_NAME))
         self.species_set = set(df["PRIMARY_COM_NAME"])
         # Load the ABA checklist
         aba_header = ["blank", "Common Name", "Spanish", "Latin", "ABA Code", "Rarity Code"]
-        df_ABA = pd.read_csv("BirdQuiz/resources/" + ABA_CHECKLIST_NAME, header=2, names=aba_header).dropna(axis=0, subset="Common Name")
+        df_ABA = pd.read_csv(Path("resources", ABA_CHECKLIST_NAME), header=2, names=aba_header).dropna(axis=0, subset="Common Name")
         aba_code_dict = df_ABA.set_index("Common Name").to_dict()["ABA Code"]
         df["ABA_CODE"] = df.apply(lambda row: aba_code_dict.get(row["PRIMARY_COM_NAME"]), axis=1)
         # Create "words" dict
