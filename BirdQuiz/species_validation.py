@@ -3,6 +3,7 @@ import pandas as pd
 from pandas import DataFrame
 from fast_autocomplete import AutoComplete
 from pathlib import Path
+import json
 
 CHECKLIST_URL = "https://com-aab-media.s3.amazonaws.com/common/ebird_taxonomy_v2022.csv"
 ABA_CHECKLIST_URL = "https://www.aba.org/wp-content/uploads/2020/03/ABA_Checklist-8.12.csv"
@@ -21,9 +22,11 @@ class Validate():
         # Load the eBird checklist
         df = pd.read_csv(Path("resources", CHECKLIST_NAME))
         self.species_set = set(df["PRIMARY_COM_NAME"])
+
         # Load the ABA checklist
         aba_header = ["blank", "Common Name", "Spanish", "Latin", "ABA Code", "Rarity Code"]
         df_ABA = pd.read_csv(Path("resources", ABA_CHECKLIST_NAME), header=2, names=aba_header).dropna(axis=0, subset="Common Name")
+        # self.generate_words_json(df_ABA)
         aba_code_dict = df_ABA.set_index("Common Name").to_dict()["ABA Code"]
         df["ABA_CODE"] = df.apply(lambda row: aba_code_dict.get(row["PRIMARY_COM_NAME"]), axis=1)
         # Create "words" dict
@@ -36,6 +39,11 @@ class Validate():
         # Create autocomplete object
         self.ac = AutoComplete(words=words, synonyms=synonyms)
 
+    def init_species_set(self):
+        pass
+    
+    def init_autocomplete(self):
+        pass
 
     def list_synonyms(self, row: pd.Series):
         l = []
@@ -60,7 +68,21 @@ class Validate():
         return name in self.species_set
 
     def search(self, name: str):
-        return self.ac.search(word=name, max_cost=3, size=5)
+        return self.ac.search(word=name, max_cost=3, size=10)
+    
+    def generate_words_json(self, df_ebird, df_aba):
+        context_path = Path("resources", "species_context.json")
+        name_to_rarity = dict(zip(df_aba["Common Name"], df_aba["Rarity Code"]))
+        d = {}
+        for s in name_to_rarity:
+            d[s] =[
+                {}, # context
+                s, # display value
+                int(6 - name_to_rarity[s]) # count
+            ]
+        with open(context_path, "w") as f:
+            json.dump(d, f, indent=2)
+        
 
 if __name__ == "__main__":
     v = Validate()
