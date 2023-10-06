@@ -73,7 +73,7 @@ class Validate():
         else:
             name = CHECKLIST_NAME
             url = CHECKLIST_URL
-        with open(name, "wb") as f:
+        with open(Path("resources", name), "wb") as f:
             f.write(requests.get(url).content)
 
     def validate(self, name: str):
