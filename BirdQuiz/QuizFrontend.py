@@ -53,6 +53,7 @@ class QuizFrontend:
         listbox_autocomplete = Listbox(self.root, width=40, height=5, selectmode="single")
         listbox_autocomplete.grid(row=2, column=4)
         # Buttons to add/remove species
+        inputbox.bind('<KeyRelease>', lambda e, i=inputbox, l=listbox_autocomplete, : self.autocomplete(e, inputbox=i, listbox=l))
         addbutton = Button(self.root, width=1, height=1)
         addbutton.grid(row=1, column=5)
         addbutton.configure(text = '+', bd = '4', command=lambda i=inputbox, l=listbox: self.add_to_listbox(i, l))
@@ -185,6 +186,14 @@ class QuizFrontend:
         else:
             print(text + " is an invalid species name")
         inputbox.delete("1.0", "end")
+
+    def autocomplete(self, event, inputbox, listbox):
+        """Reads the inputbox text and populates the listbox with results"""
+        s = inputbox.get("1.0", "end").strip()
+        listbox.delete(0, "end")
+        ac_result = self.name_validator.search(s)
+        for i in range(min(5, len(ac_result))):
+            listbox.insert("end", ac_result[i][0])
 
 
 if __name__ == "__main__":
