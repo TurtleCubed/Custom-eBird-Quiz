@@ -1,7 +1,7 @@
 import requests
 import pandas as pd
 from pandas import DataFrame
-from fast_autocomplete import AutoComplete
+from fast_autocomplete import AutoComplete, autocomplete_factory
 from pathlib import Path
 import json
 
@@ -23,27 +23,40 @@ class Validate():
         df = pd.read_csv(Path("resources", CHECKLIST_NAME))
         self.species_set = set(df["PRIMARY_COM_NAME"])
 
+        # Load data necessary for autocompletion
         # Load the ABA checklist
         aba_header = ["blank", "Common Name", "Spanish", "Latin", "ABA Code", "Rarity Code"]
         df_ABA = pd.read_csv(Path("resources", ABA_CHECKLIST_NAME), header=2, names=aba_header).dropna(axis=0, subset="Common Name")
-        # self.generate_words_json(df_ABA)
         aba_code_dict = df_ABA.set_index("Common Name").to_dict()["ABA Code"]
         df["ABA_CODE"] = df.apply(lambda row: aba_code_dict.get(row["PRIMARY_COM_NAME"]), axis=1)
         # Create "words" dict
         words = {}
+        # Dump everything from the eBird checklist
         for index, row in df.iterrows():
-            words[row["PRIMARY_COM_NAME"]] = {}
-        # Create a new column for synonyms
-        df["SYNONYMNS"] = df.apply(self.list_synonyms, axis=1)
-        synonyms = df.set_index("PRIMARY_COM_NAME").to_dict()["SYNONYMNS"]
+            words[row["PRIMARY_COM_NAME"]] = [
+                {},
+                row["PRIMARY_COM_NAME"],
+                int(0)
+            ]
+        name_to_rarity = dict(zip(df_ABA["Common Name"], df_ABA["Rarity Code"]))
+        # For the birds with ABA rarity codes, give them a count
+        for name in name_to_rarity:
+            words[name] =[
+                {}, # context
+                name, # display value
+                int(6 - name_to_rarity[name]) # count
+            ]
+        with open(Path("resources", "words.json"), "w") as f:
+            json.dump(words, f, indent=2)
+        
         # Create autocomplete object
-        self.ac = AutoComplete(words=words, synonyms=synonyms)
-
-    def init_species_set(self):
-        pass
-    
-    def init_autocomplete(self):
-        pass
+        content_files = {
+            'words': {
+                'filepath': "resources/words.json",
+                'compress': True  # means compress the graph data in memory
+            }
+        }
+        self.ac = autocomplete_factory(content_files=content_files)
 
     def list_synonyms(self, row: pd.Series):
         l = []
@@ -69,19 +82,6 @@ class Validate():
 
     def search(self, name: str):
         return self.ac.search(word=name, max_cost=3, size=10)
-    
-    def generate_words_json(self, df_ebird, df_aba):
-        context_path = Path("resources", "species_context.json")
-        name_to_rarity = dict(zip(df_aba["Common Name"], df_aba["Rarity Code"]))
-        d = {}
-        for s in name_to_rarity:
-            d[s] =[
-                {}, # context
-                s, # display value
-                int(6 - name_to_rarity[s]) # count
-            ]
-        with open(context_path, "w") as f:
-            json.dump(d, f, indent=2)
         
 
 if __name__ == "__main__":
