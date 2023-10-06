@@ -40,7 +40,7 @@ class QuizFrontend:
 
         self.label.grid(row = 0, column = 0, sticky = W, pady = 2)
         self.button.grid(row=0, column=1, sticky=W, pady=2)
-        self.image.grid(row=1, column=0, columnspan=4, rowspan=2, padx=5, pady=5)
+        self.image.grid(row=1, column=0, columnspan=4, rowspan=3, padx=5, pady=5)
 
         self.set_backend()
 
@@ -48,8 +48,10 @@ class QuizFrontend:
         inputbox = Text(self.root, width=30, height=1)
         inputbox.grid(row=1, column=4)
         listbox = Listbox(self.root, width=30, height=28, selectmode="multiple")
-        listbox.grid(row=2, column=4, columnspan=3, padx=5, pady=5)
+        listbox.grid(row=3, column=4, rowspan=2, padx=5, pady=5)
         listbox.insert(0, *self.backend.alpha_species)
+        listbox_autocomplete = Listbox(self.root, width=40, height=5, selectmode="single")
+        listbox_autocomplete.grid(row=2, column=4)
         # Buttons to add/remove species
         addbutton = Button(self.root, width=1, height=1)
         addbutton.grid(row=1, column=5)
@@ -62,7 +64,7 @@ class QuizFrontend:
         # Black and white checkbox
         self.bw_var = IntVar()
         bw_checkbox = Checkbutton(self.root, text="Black and White", variable=self.bw_var, onvalue=1, offvalue=0)
-        bw_checkbox.grid(row=3, column=0)
+        bw_checkbox.grid(row=4, column=0)
 
         # Number of questions
         num_q_label = Label(self.root, text="Num Questions:")
@@ -71,7 +73,7 @@ class QuizFrontend:
         self.num_q.grid(row=0, column=3)
         self.num_q.insert("end", str(self.backend.questions))
 
-        self.intro_widgets = [inputbox, listbox, addbutton, rmbutton, bw_checkbox, self.num_q, num_q_label]
+        self.intro_widgets = [inputbox, listbox, listbox_autocomplete, addbutton, rmbutton, bw_checkbox, self.num_q, num_q_label]
 
         self.button.configure(text = 'Play', bd = '5', command = lambda : self.start_game(listbox.get(0, "end")))
 
