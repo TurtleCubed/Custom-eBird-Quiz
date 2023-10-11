@@ -45,7 +45,7 @@ class QuizFrontend:
         self.set_backend()
 
         # List of species and input box for additional species
-        inputbox = Text(self.root, width=30, height=1)
+        inputbox = Text(self.root, width=30, height=1, wrap='none')
         inputbox.grid(row=1, column=4)
         listbox = Listbox(self.root, width=30, height=28, selectmode="multiple")
         listbox.grid(row=3, column=4, rowspan=2, padx=5, pady=5)
@@ -53,7 +53,9 @@ class QuizFrontend:
         listbox_autocomplete = Listbox(self.root, width=40, height=5, selectmode="single")
         listbox_autocomplete.grid(row=2, column=4)
         # Buttons to add/remove species
-        inputbox.bind('<KeyRelease>', lambda e, i=inputbox, l=listbox_autocomplete, : self.autocomplete(e, inputbox=i, listbox=l))
+        inputbox.bind('<KeyRelease>', lambda e, i=inputbox, l=listbox_autocomplete: self.autocomplete(e, inputbox=i, listbox=l))
+        listbox_autocomplete.bind('<<ListboxSelect>>', lambda e, l1 = listbox_autocomplete, l2=listbox, i=inputbox: 
+                                  self.autocomplete_select(e, listbox1=l1, listbox2=l2, inputbox=i))
         addbutton = Button(self.root, width=1, height=1)
         addbutton.grid(row=1, column=5)
         addbutton.configure(text = '+', bd = '4', command=lambda i=inputbox, l=listbox: self.add_to_listbox(i, l))
@@ -194,6 +196,14 @@ class QuizFrontend:
         ac_result = self.name_validator.search(s)
         for i in range(min(5, len(ac_result))):
             listbox.insert("end", ac_result[i][0])
+    
+    def autocomplete_select(self, event, listbox1, listbox2, inputbox):
+        """Adds the selected autocomplete result to the species list"""
+        index = int(listbox1.curselection()[0])
+        text = listbox1.get(index)
+        listbox2.insert(0, text)
+        inputbox.delete("1.0", "end")
+        listbox1.delete(0, "end")
 
 
 if __name__ == "__main__":
