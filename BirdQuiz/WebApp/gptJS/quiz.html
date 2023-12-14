@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <title>Quiz</title>
+</head>
+<body>
+  <h1>Quiz</h1>
+  <div id="quiz"></div>
+  <ul id="demoList"></ul>
+  
+  <script>
+    function loadQuiz() {
+      const arr = JSON.parse(sessionStorage.getItem("quizData"));
+      arr.forEach(item => {
+        console.log(item);
+        const listItem = document.createElement('div');
+        listItem.textContent = String(item);
+        demoList.appendChild(listItem);
+      });
+    }
+    
+    window.onload = loadQuiz;
+  </script>
+</body>
+</html>

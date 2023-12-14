@@ -1,0 +1,86 @@
+/* styles.css */
+
+/* General styles */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+  }
+  
+  .container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  h1 {
+    text-align: center;
+    color: #333;
+  }
+  
+  /* Configuration page styles */
+  #difficulty {
+    padding: 8px;
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+
+  input {
+    padding: 8px;
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+  
+  input[type=submit] {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+
+  button {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: #4caf50;
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  button:hover {
+    background-color: #45a049;
+  }
+
+  textarea {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+  }
+  
+  div.result {
+    background-color: #b3b3b3;
+  }
+
+  div.result:hover {
+    background-color: #45a049;
+  }
+
+  div.selection:hover {
+    background-color: red;
+  }
+  
+  /* Quiz page styles */
+  #quiz {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* Additional styles based on your quiz structure */
+  /* Customize these styles as needed for your specific quiz layout */
+  

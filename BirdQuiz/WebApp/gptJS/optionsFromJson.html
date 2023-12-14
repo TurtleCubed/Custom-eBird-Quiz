@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Load List from File</title>
+</head>
+<body>
+
+<ul id="listContainer"></ul>
+
+<script>
+  // Function to fetch data from a JSON file
+  async function loadListFromFile() {
+    try {
+      const response = await fetch('ebird_taxonomy_v2023.json'); // Fetch the JSON file
+      const data = await response.json(); // Extract JSON data from the response
+
+      const listContainer = document.getElementById('listContainer');
+
+      // Iterate through the items and create list elements
+      data.forEach(item => {
+        const listItem = document.createElement('li');
+        listItem.textContent = item.PRIMARY_COM_NAME;
+        listContainer.appendChild(listItem);
+      });
+    } catch (error) {
+      console.error('Error loading the list:', error);
+    }
+  }
+
+  // Call the function to load the list when the page loads
+  window.onload = loadListFromFile;
+</script>
+
+</body>
+</html>

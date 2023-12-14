@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <title>Quiz Configuration</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+  <div class="container">
+    <h1>Quiz Configuration</h1>
+    <!-- <form id="mainForm"> -->
+    <label for="questionCount">Question Count:</label>
+    <input id="questionCount" size="1" maxlength="2" value="20"></input>
+    <br>
+    <label for="search">Search:</label>
+    <input type="text" id="textInput" placeholder="Search..." oninput="showResults()">
+    <br>
+    <ul id="results"></ul>
+    <br>
+    <ul id="selectionList"></ul>
+    <br>
+    <button id="start" onclick="startQuiz()">Start Quiz!</button>
+    <!-- </form> -->
+    <ul id="listContainer"></ul>
+  </div>
+  <script>
+    var data = null;
+    var selection = [];
+    async function loadListFromFile() {
+      try {
+        const response = await fetch('ebird_taxonomy_v2023.json'); // Fetch the JSON file
+        data = await response.json(); // Extract JSON data from the response
+        const listContainer = document.getElementById('listContainer');
+        // Iterate through the items and create list elements
+        data.forEach(item => {
+          const listItem = document.createElement('li');
+          listItem.textContent = item.PRIMARY_COM_NAME;
+          listContainer.appendChild(listItem);
+        });
+      } catch (error) {
+        console.error('Error loading the list:', error);
+      }
+    }
+    window.onload = loadListFromFile;
+
+    function isMatch(speciesName, searchString) {
+      var s = speciesName.split(/[- ]/);
+      if (searchString.length == 4) {
+        switch (s.length) {
+          case 1: 
+            if (searchString.slice(0, 4) == s[0].slice(0, 4)) {
+              return true;
+            }
+            break;
+          case 2:
+            if (searchString.slice(0, 2) == s[0].slice(0, 2) && searchString.slice(2, 4) == s[1].slice(0, 2)) {
+              return true;
+            };
+            break;
+          case 3:
+            if (searchString.slice(0, 2) == s[0].slice(0, 2) && searchString.slice(2, 3) == s[1].slice(0, 1) && searchString.slice(3, 4) == s[2].slice(0, 1) ||
+                   searchString.slice(0, 1) == s[0].slice(0, 1) && searchString.slice(1, 2) == s[1].slice(0, 1) && searchString.slice(2, 4) == s[2].slice(0, 2))
+              return true;
+            break;
+          case 4:
+            if (searchString.slice(0, 1) == s[0].slice(0, 1) && searchString.slice(1, 2) == s[1].slice(0, 1) &&
+                   searchString.slice(2, 3) == s[2].slice(0, 1) && searchString.slice(3, 4) == s[3].slice(0, 1))
+              return true;
+            break;
+        }
+      }
+      for (var i = 0; i < s.length; i++) {
+        if (s[i].indexOf(searchString) == 0) {
+          return true;
+        }
+      }
+      if (speciesName.indexOf(searchString) == 0) {
+        return true;
+      }
+      return false;
+    }
+
+    function searchResults(searchInput) {
+      var r = [];
+      for (var i = 0; i < data.length; i++) {
+        if (!data[i].PRIMARY_COM_NAME) {
+          continue;
+        }
+        if (isMatch(data[i].PRIMARY_COM_NAME.toLowerCase(), searchInput.toLowerCase())) {
+          const speciesCode = data[i].SPECIES_CODE;
+          const commonName = data[i].PRIMARY_COM_NAME;
+          const resultID = "result_" + speciesCode;
+          var resultItem = document.createElement('div');
+          resultItem.innerHTML = commonName;
+          resultItem.speciesCode = speciesCode;
+          resultItem.className = "result";
+          resultItem.id = resultID;
+          resultItem.addEventListener("click", function (e) {
+            const selectionID = "selection_" + speciesCode;
+            var selectionItem = document.createElement("div");
+            selectionItem.innerHTML = commonName;
+            selectionItem.id = selectionID;
+            selectionItem.className = "selection";
+            selectionItem.code = speciesCode;
+            selectionItem.addEventListener("click", function (f) {
+              node = document.getElementById(selectionID);
+              node.parentNode.removeChild(node);
+            });
+            document.getElementById("selectionList").appendChild(selectionItem);
+            document.getElementById("textInput").value = "";
+          });
+          r.push(resultItem);
+        }
+        if (r.length >= 10) {
+          i = data.length;
+        }
+      }
+      return r;
+    }
+
+    function showResults() {
+      var inputText = document.getElementById('textInput').value;
+      var listContainer = document.getElementById('results');
+      listContainer.replaceChildren()
+      searchResults(inputText).forEach(r => {
+        listContainer.appendChild(r);
+      });
+    }
+
+    function getLinks(codes) {
+      for (var i = 0; i < codes.length; i++) {
+        const url = "https://media.ebird.org/api/v2/search?taxonCode=" + codes[i] + "&sort=rating_rank_desc&mediaType=photo&birdOnly=true&beginMonth=1";
+        fetch(url)
+          .then((response) => response.json())
+          .then((json) => console.log(json))
+      }
+    }
+
+    function startQuiz() {
+      var quizData = [];
+      selectionList = document.getElementById("selectionList").childNodes;
+      console.log(selectionList);
+      for (var i = 0; i < selectionList.length; i++) {
+        quizData.push(selectionList[i].code);
+      }
+      console.log(quizData);
+      sessionStorage.setItem("quizData", JSON.stringify(quizData));
+      
+      // generate dict with length number of questions containing name, code, link,
+      const corsUrl = "https://cors-anywhere.herokuapp.com/";
+      // const url = corsUrl + "https://media.ebird.org/api/v2/search?taxonCode=" + quizData[0] + "&sort=rating_rank_desc&mediaType=photo&birdOnly=true&beginMonth=1";
+      const url = corsUrl + "https://google.com/";
+      cookies={'ml-search-session': 'eyJ1c2VyIjp7ImFub255bW91cyI6dHJ1ZX19', 'ml-search-session.sig': 'XZPO3pJ50PRL94J3OagC3Bg1IVk'}  
+      fetch(url, {
+        method: "GET",
+        // headers: {
+        //   'ml-search-session': 'eyJ1c2VyIjp7ImFub255bW91cyI6dHJ1ZX19',
+        //   'ml-search-session.sig': 'XZPO3pJ50PRL94J3OagC3Bg1IVk'
+        // }
+      })
+          .then((response) => response.json())
+          .then((json) => console.log(json))
+
+      // const url = "quiz.html?question=1";
+      // document.location.href = url;
+      
+    }
+    function httpGet(theUrl) {
+          var xmlHttp = new XMLHttpRequest();
+          xmlHttp.open( "GET", theUrl, false ); // false for synchronous request
+          xmlHttp.send( null );
+          return xmlHttp.responseText;
+      }
+    
+  </script>
+</body>
+
+</html>
