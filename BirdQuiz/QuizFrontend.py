@@ -1,6 +1,6 @@
 from tkinter import *
 from PIL import ImageTk, Image
-from QuizBackend import QuizBackend
+from QuizBackendNoWeb import QuizBackend
 from species_validation import Validate
 from ttkwidgets.autocomplete import AutocompleteEntryListbox
 
