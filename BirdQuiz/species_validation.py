@@ -1,19 +1,20 @@
 import requests
 import pandas as pd
-from pandas import DataFrame
-from fast_autocomplete import AutoComplete, autocomplete_factory
+from fast_autocomplete import autocomplete_factory
 from pathlib import Path
 import json
+import zipfile
+import os, shutil
 
-CHECKLIST_URL = "https://com-aab-media.s3.amazonaws.com/common/ebird_taxonomy_v2022.csv"
-ABA_CHECKLIST_URL = "https://www.aba.org/wp-content/uploads/2020/03/ABA_Checklist-8.12.csv"
-CHECKLIST_NAME = "ebird_taxonomy_v2022.csv"
-ABA_CHECKLIST_NAME = "ABA_Checklist-8.12.csv"
+CHECKLIST_URL = "https://www.birds.cornell.edu/clementschecklist/wp-content/uploads/2023/12/ebird_taxonomy_v2023-csv.zip"
+ABA_CHECKLIST_URL = "https://www.aba.org/wp-content/uploads/2020/03/ABA_Checklist-8.14.csv.zip"
+CHECKLIST_NAME = "ebird_taxonomy_v2023.csv"
+ABA_CHECKLIST_NAME = "ABA_Checklist-8.14.csv"
 
 class Validate():
 
     def __init__(self) -> None:
-        """Gets the 2022 taxononmy, and initalizes the set"""
+        """Gets the 2023 taxononmy, and initalizes the set"""
         # Verify/download eBird and ABA checklists
         if not Path.is_file(Path("resources", CHECKLIST_NAME)):
             self.get_checklist_from_url()
@@ -73,8 +74,14 @@ class Validate():
         else:
             name = CHECKLIST_NAME
             url = CHECKLIST_URL
-        with open(Path("resources", name), "wb") as f:
+        with open(Path("resources", name + '.zip'), "wb") as f:
             f.write(requests.get(url).content)
+        with zipfile.ZipFile(Path("resources", name + '.zip'), "r") as zip_ref:
+            zip_ref.extractall(os.path.join("resources", "tmp"))
+        os.remove(Path("resources", name + '.zip'))
+        os.rename(os.path.join("resources", "tmp", name), os.path.join("resources", name))
+        shutil.rmtree(os.path.join("resources", "tmp"))
+        
 
     def validate(self, name: str):
         """Very basic set check"""
