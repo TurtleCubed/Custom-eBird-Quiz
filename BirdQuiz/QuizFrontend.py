@@ -3,6 +3,7 @@ from PIL import ImageTk, Image
 from QuizBackendNoWeb import QuizBackend
 from species_validation import Validate
 from ttkwidgets.autocomplete import AutocompleteEntryListbox
+from pathlib import Path
 
 # TODO impossible: birdie style
 # TODO hard Case insensitive autofill?, zoom
@@ -33,27 +34,32 @@ class QuizFrontend:
         self.root.geometry('1280x720')
         self.label.configure(text = "Welcome to BirdQuiz! Press play to begin:")
 
-        im = self.resize_to_tk(Image.open("./resources/intro.jpg"))
+        im = self.resize_to_tk(Image.open(Path("resources", "intro.jpg")))
         self.image = Label(self.root, image=im)
         self.image.photo = im
 
         self.label.grid(row = 0, column = 0, sticky = W, pady = 2)
         self.button.grid(row=0, column=1, sticky=W, pady=2)
-        self.image.grid(row=1, column=0, columnspan=4, rowspan=2, padx=5, pady=5)
+        self.image.grid(row=1, column=0, columnspan=4, rowspan=3, padx=5, pady=5)
 
         self.set_backend()
 
         # List of species and input box for additional species
-        inputbox = Text(self.root, width=30, height=1)
+        inputbox = Text(self.root, width=30, height=1, wrap='none')
         inputbox.grid(row=1, column=4)
         listbox = Listbox(self.root, width=30, height=28, selectmode="multiple")
-        listbox.grid(row=2, column=4, columnspan=3, padx=5, pady=5)
+        listbox.grid(row=3, column=4, rowspan=2, padx=5, pady=5)
         listbox.insert(0, *self.backend.alpha_species)
+        listbox_autocomplete = Listbox(self.root, width=40, height=5, selectmode="single")
+        listbox_autocomplete.grid(row=2, column=4)
         # Buttons to add/remove species
+        inputbox.bind('<KeyRelease>', lambda e, i=inputbox, l=listbox_autocomplete: self.autocomplete(e, inputbox=i, listbox=l))
+        listbox_autocomplete.bind('<<ListboxSelect>>', lambda e, l1 = listbox_autocomplete, l2=listbox, i=inputbox: 
+                                  self.autocomplete_select(e, listbox1=l1, listbox2=l2, inputbox=i))
         addbutton = Button(self.root, width=1, height=1)
         addbutton.grid(row=1, column=5)
-        addbutton.configure(text = '+', bd = '4', command=lambda _, i=inputbox, l=listbox: self.add_to_listbox(i, l))
-        self.root.bind('<Return>', lambda _, i=inputbox, l=listbox: self.add_to_listbox(i, l))
+        addbutton.configure(text = '+', bd = '4', command=lambda i=inputbox, l=listbox: self.add_to_listbox(i, l))
+        self.root.bind('<Return>', lambda i=inputbox, l=listbox: self.add_to_listbox(i, l))
         rmbutton = Button(self.root, width=1, height=1)
         rmbutton.grid(row=1, column=6)
         rmbutton.configure(text = '-', bd = '4', command = lambda: [listbox.delete(x) for x in reversed(listbox.curselection())])
@@ -61,7 +67,7 @@ class QuizFrontend:
         # Black and white checkbox
         self.bw_var = IntVar()
         bw_checkbox = Checkbutton(self.root, text="Black and White", variable=self.bw_var, onvalue=1, offvalue=0)
-        bw_checkbox.grid(row=3, column=0)
+        bw_checkbox.grid(row=4, column=0)
 
         # Number of questions
         num_q_label = Label(self.root, text="Num Questions:")
@@ -70,7 +76,7 @@ class QuizFrontend:
         self.num_q.grid(row=0, column=3)
         self.num_q.insert("end", str(self.backend.questions))
 
-        self.intro_widgets = [inputbox, listbox, addbutton, rmbutton, bw_checkbox, self.num_q, num_q_label]
+        self.intro_widgets = [inputbox, listbox, listbox_autocomplete, addbutton, rmbutton, bw_checkbox, self.num_q, num_q_label]
 
         self.button.configure(text = 'Play', bd = '5', command = lambda : self.start_game(listbox.get(0, "end")))
 
@@ -181,9 +187,24 @@ class QuizFrontend:
             listbox.insert(0, text)
         else:
             print(text + " is an invalid species name")
-        inputbox.delete("1.0", "end")  
-    
+        inputbox.delete("1.0", "end")
 
+    def autocomplete(self, event, inputbox, listbox):
+        """Reads the inputbox text and populates the listbox with results"""
+        s = inputbox.get("1.0", "end").strip()
+        listbox.delete(0, "end")
+        ac_result = self.name_validator.search(s)
+        for i in range(min(5, len(ac_result))):
+            listbox.insert("end", ac_result[i][0])
     
+    def autocomplete_select(self, event, listbox1, listbox2, inputbox):
+        """Adds the selected autocomplete result to the species list"""
+        index = int(listbox1.curselection()[0])
+        text = listbox1.get(index)
+        listbox2.insert(0, text)
+        inputbox.delete("1.0", "end")
+        listbox1.delete(0, "end")
 
-a = QuizFrontend()
+
+if __name__ == "__main__":
+    a = QuizFrontend()

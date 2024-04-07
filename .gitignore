@@ -1,3 +1,5 @@
+__pycache__/
+.wdm/
 *.idea
 *.jpeg
 *.jpg
@@ -5,3 +7,6 @@
 *.zip
 *.whl
 venv/
+BirdQuiz/Quizzes
+BirdQuiz/resources
+BirdQuiz/species.txt
