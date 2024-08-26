@@ -1,6 +1,7 @@
 from selenium import webdriver
 from selenium.webdriver.support.wait import WebDriverWait
 from webdriver_manager.chrome import ChromeDriverManager
+from webdriver_manager.core.driver_cache import DriverCacheManager
 from selenium.webdriver.chrome.options import Options
 from math import sin, cos, sqrt, atan2, radians
 
@@ -8,7 +9,7 @@ class GMap:
     def __init__(self, view="40.094099,-98.3882497,4z"):
         chrome_options = Options()
         chrome_options.add_experimental_option('excludeSwitches', ['enable-logging'])
-        self.driver = webdriver.Chrome(ChromeDriverManager(path="./BirdQuiz/resources").install(), options=chrome_options)
+        self.driver = webdriver.Chrome(ChromeDriverManager(cache_manager=DriverCacheManager(root_dir="./resources")).install(), options=chrome_options)
         self.view = view
         self.reset()
 

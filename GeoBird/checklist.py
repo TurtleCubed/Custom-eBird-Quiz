@@ -26,7 +26,7 @@ class BirdAPI:
 		self.locs = []
 		self.tax = {}
 		self.curr_checklist = None
-		self.min_species = 10
+		self.min_species = 20
 		self.begin_thread()
 
 	def begin_thread(self):
