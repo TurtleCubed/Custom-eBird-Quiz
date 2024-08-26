@@ -138,7 +138,8 @@ class QuizBackend():
         self.search_box.clear()
         # Set random month
         month = randint(1, 12)
-        self.browser.get(f'https://media.ebird.org/catalog?view=grid&mediaType=photo&beginMonth={month}')
+        # year = randint(2015, 2023)
+        self.browser.get(f'https://media.ebird.org/catalog?view=grid&mediaType=photo&beginMonth={month}&sort=rating_rank_desc')
         self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
         # Type species name, then wait for autofill suggestion
         self.search_box.send_keys(species_name)

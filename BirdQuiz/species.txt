@@ -1,4 +1,15 @@
-Herring Gull
-California Gull
-Ring-billed Gull
-Short-billed Gull
+Least Sandpiper
+Western Sandpiper
+Semipalmated Plover
+Killdeer
+Short-billed Dowitcher
+Greater Yellowlegs
+Lesser Yellowlegs
+Willet
+Marbled Godwit
+Whimbrel
+Long-billed Curlew
+Snowy Egret
+Great Egret
+Black-necked Stilt
+American Avocet

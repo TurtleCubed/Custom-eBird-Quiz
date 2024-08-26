@@ -119,9 +119,9 @@ class QuizBackend():
         imgurls = [f'https://cdn.download.ams.birds.cornell.edu/api/v1/asset/{i}/' for i in out]
         return imgurls
 
-    def load_ebird_taxonomy(self, path=Path("resources", "ebird_taxonomy_v2022.csv")):
+    def load_ebird_taxonomy(self, path=Path("resources", "ebird_taxonomy_v2023.csv")):
         '''Load a dictonary copy of the eBird Taxonomy. The url search uses bird ID instead of species name'''
         with open(path, 'r') as f:
             taxon = csv.reader(f)
             for l in taxon:
-                self.taxon[l[3]] = l[2]
+                self.taxon[l[4]] = l[2]
