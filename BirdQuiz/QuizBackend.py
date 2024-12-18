@@ -18,7 +18,7 @@ class QuizBackend():
     """
     QuizBackend Constantly runs fetch() in a separate thread to load bird images into memory.
     """
-    def __init__(self, questions=20, download=False, from_file=False):
+    def __init__(self, questions=20, download=True, from_file=False, begin_month=1, end_month=12, begin_year=2016, end_year=2023, no_browser=False):
         super().__init__()
         self.event = Event()
 
@@ -34,10 +34,14 @@ class QuizBackend():
         self.questions = questions
         self.i = 0
         self.correct = 0
+        self.begin_month = begin_month
+        self.end_month = end_month
+        self.begin_year = begin_year
+        self.end_year = end_year
 
-        self.browser_thread = Thread(target=self.open_browser)
-        self.browser_thread.start()
-
+        if not no_browser:
+            self.browser_thread = Thread(target=self.open_browser)
+            self.browser_thread.start()
         
         self.transform = lambda x: x
 
@@ -50,7 +54,7 @@ class QuizBackend():
         if not self.from_file:
             # Open Browser and set parameters
             # service = Service()
-            chrome_options = self.get_headless_options()
+            chrome_options = Options()# self.get_headless_options()
             self.browser = webdriver.Chrome(service=Service(ChromeDriverManager(cache_manager=DriverCacheManager(root_dir="./resources")).install()), options=chrome_options)
             # self.browser = webdriver.Chrome(service=service, options=chrome_options)
             self.browser.minimize_window()
@@ -139,9 +143,10 @@ class QuizBackend():
         self.clear_search()
         self.search_box.clear()
         # Set random month
-        month = randint(1, 12)
-        # year = randint(2015, 2023)
-        self.browser.get(f'https://media.ebird.org/catalog?view=grid&mediaType=photo&beginMonth={month}&sort=rating_rank_desc')
+        month = [i for i in range(1, 13) if ((i >= self.begin_month and i <= self.end_month) if self.begin_month <= self.end_month else not (i < self.begin_month and i > self.end_month))]
+        month = month[randint(0, len(month) - 1)]
+        year = randint(self.begin_year, self.end_year)
+        self.browser.get(f'https://media.ebird.org/catalog?view=grid&mediaType=photo&beginMonth={month}&endMonth={month}&beginYear={year}&endYear={year}')
         self.search_box = self.browser.find_element(by=By.ID, value="taxonFinder")
         # Type species name, then wait for autofill suggestion
         self.search_box.send_keys(species_name)
@@ -153,7 +158,8 @@ class QuizBackend():
         while len(self.browser.find_elements(by=By.CSS_SELECTOR, value='[class="Button u-margin-none"]')) == 0:
             pass
         more_button = self.browser.find_element(by=By.CSS_SELECTOR, value='[class="Button u-margin-none"]')
-        more_button.click()
+        if more_button.is_displayed() and more_button.is_enabled():
+            more_button.click()
         while len(self.browser.find_elements(By.CSS_SELECTOR, value='[class="ResultsGrid-card-image"]')) == 0:
             pass
 

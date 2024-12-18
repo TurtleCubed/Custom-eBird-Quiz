@@ -1,6 +1,6 @@
 from tkinter import *
 from PIL import ImageTk, Image
-from QuizBackend import QuizBackend
+from QuizBackendNoWeb import QuizBackendNoWeb as QuizBackend
 from species_validation import Validate
 from ttkwidgets.autocomplete import AutocompleteEntryListbox
 from pathlib import Path
@@ -67,7 +67,18 @@ class QuizFrontend:
         # Black and white checkbox
         self.bw_var = IntVar()
         bw_checkbox = Checkbutton(self.root, text="Black and White", variable=self.bw_var, onvalue=1, offvalue=0)
-        bw_checkbox.grid(row=4, column=0)
+        bw_checkbox.grid(row=5, column=0)
+        # Start month, end month
+        start_month_label = Label(self.root, text="Start month:")
+        start_month_label.grid(row=4, column=0)
+        self.start_month = Text(self.root, width=2, height=1)
+        self.start_month.grid(row=4, column=1)
+        self.start_month.insert("end", "1")
+        end_month_label = Label(self.root, text="End month:")
+        end_month_label.grid(row=4, column=2)
+        self.end_month = Text(self.root, width=2, height=1)
+        self.end_month.grid(row=4, column=3)
+        self.end_month.insert("end", "12")
 
         # Number of questions
         num_q_label = Label(self.root, text="Num Questions:")
@@ -76,7 +87,7 @@ class QuizFrontend:
         self.num_q.grid(row=0, column=3)
         self.num_q.insert("end", str(self.backend.questions))
 
-        self.intro_widgets = [inputbox, listbox, listbox_autocomplete, addbutton, rmbutton, bw_checkbox, self.num_q, num_q_label]
+        self.intro_widgets = [inputbox, listbox, listbox_autocomplete, addbutton, rmbutton, bw_checkbox, self.num_q, num_q_label, start_month_label, self.start_month, end_month_label, self.end_month]
 
         self.button.configure(text = 'Play', bd = '5', command = lambda : self.start_game(listbox.get(0, "end")))
 
@@ -85,6 +96,8 @@ class QuizFrontend:
     def start_game(self, species):
         """Begin the game, by removing intro screen information and booting the backend."""
         self.backend.questions = int(self.num_q.get("1.0", "end").strip())
+        self.backend.begin_month = int(self.start_month.get("1.0", "end").strip())
+        self.backend.end_month = int(self.end_month.get("1.0", "end").strip())
         if self.bw_var.get() == 1:
             self.backend.add_black_white()
         for w in self.intro_widgets:
