@@ -1,101 +1,120 @@
-import requests
-import pandas as pd
-from fast_autocomplete import autocomplete_factory
+"""Canonical eBird taxonomy lookups for the quiz UI."""
+
+import csv
 from pathlib import Path
-import json
-import zipfile
-import os, shutil
 
-CHECKLIST_URL = "https://www.birds.cornell.edu/clementschecklist/wp-content/uploads/2023/12/ebird_taxonomy_v2023-csv.zip"
-ABA_CHECKLIST_URL = "https://www.aba.org/wp-content/uploads/2020/03/ABA_Checklist-8.14.csv.zip"
-CHECKLIST_NAME = "ebird_taxonomy_v2023.csv"
-ABA_CHECKLIST_NAME = "ABA_Checklist-8.14.csv"
+try:
+    from rapidfuzz import fuzz, process
+except ImportError:
+    fuzz = process = None
 
-class Validate():
 
-    def __init__(self) -> None:
-        """Gets the 2023 taxononmy, and initalizes the set"""
-        # Verify/download eBird and ABA checklists
-        if not Path.is_file(Path("resources", CHECKLIST_NAME)):
-            self.get_checklist_from_url()
-        if not Path.is_file(Path("resources", ABA_CHECKLIST_NAME)):
-            self.get_checklist_from_url(aba=True)
-        # Load the eBird checklist
-        df = pd.read_csv(Path("resources", CHECKLIST_NAME))
-        self.species_set = set(df["PRIMARY_COM_NAME"])
+RESOURCE_DIR = Path(__file__).resolve().parent / "resources"
+TAXONOMY_FILES = (
+    "eBird_Taxonomy_v2026.csv",
+    "eBird_taxonomy_v2024.csv",
+    "ebird_taxonomy_v2023.csv",
+)
 
-        # Load data necessary for autocompletion
-        # Load the ABA checklist
-        aba_header = ["blank", "Common Name", "Spanish", "Latin", "ABA Code", "Rarity Code"]
-        df_ABA = pd.read_csv(Path("resources", ABA_CHECKLIST_NAME), header=2, names=aba_header).dropna(axis=0, subset="Common Name")
-        aba_code_dict = df_ABA.set_index("Common Name").to_dict()["ABA Code"]
-        df["ABA_CODE"] = df.apply(lambda row: aba_code_dict.get(row["PRIMARY_COM_NAME"]), axis=1)
-        # Create "words" dict
-        words = {}
-        # Dump everything from the eBird checklist
-        for index, row in df.iterrows():
-            words[row["PRIMARY_COM_NAME"]] = [
-                {},
-                row["PRIMARY_COM_NAME"],
-                int(0)
-            ]
-        name_to_rarity = dict(zip(df_ABA["Common Name"], df_ABA["Rarity Code"]))
-        # For the birds with ABA rarity codes, give them a count
-        for name in name_to_rarity:
-            words[name] =[
-                {}, # context
-                name, # display value
-                int(6 - name_to_rarity[name]) # count
-            ]
-        with open(Path("resources", "words.json"), "w") as f:
-            json.dump(words, f, indent=2)
-        
-        # Create autocomplete object
-        content_files = {
-            'words': {
-                'filepath': "resources/words.json",
-                'compress': True  # means compress the graph data in memory
-            }
+
+def normalize_name(name: str) -> str:
+    """Normalize names for case-insensitive matching without changing display text."""
+    return " ".join((name or "").split()).casefold()
+
+
+class Validate:
+    """Load one local eBird taxonomy and provide canonical names and suggestions."""
+
+    def __init__(self, taxonomy_path: Path | None = None) -> None:
+        self.taxonomy_path = taxonomy_path or self._find_taxonomy()
+        self.species_by_key: dict[str, dict[str, str]] = {}
+        self.species_set: set[str] = set()
+        self._load_taxonomy()
+
+    @staticmethod
+    def _find_taxonomy() -> Path:
+        for filename in TAXONOMY_FILES:
+            path = RESOURCE_DIR / filename
+            if path.is_file():
+                return path
+        expected = ", ".join(TAXONOMY_FILES)
+        raise FileNotFoundError(
+            f"No eBird taxonomy CSV was found in {RESOURCE_DIR}. "
+            f"Expected one of: {expected}"
+        )
+
+    def _load_taxonomy(self) -> None:
+        with self.taxonomy_path.open("r", encoding="utf-8-sig", newline="") as source:
+            reader = csv.DictReader(source)
+            for raw_row in reader:
+                row = {str(key).strip().casefold(): (value or "").strip()
+                       for key, value in raw_row.items() if key}
+                common_name = row.get("primary_com_name", "")
+                if not common_name:
+                    continue
+                key = normalize_name(common_name)
+                self.species_by_key.setdefault(key, {
+                    "common_name": common_name,
+                    "scientific_name": row.get("sci_name", ""),
+                    "species_code": row.get("species_code", ""),
+                    "category": row.get("category", ""),
+                })
+        self.species_set = {
+            record["common_name"] for record in self.species_by_key.values()
         }
-        self.ac = autocomplete_factory(content_files=content_files)
+        self.species = sorted(self.species_set, key=str.casefold)
+        self._display_by_key = {
+            normalize_name(species): species for species in self.species
+        }
+        self._normalized_names = list(self._display_by_key)
 
-    def list_synonyms(self, row: pd.Series):
-        l = []
-        for header in ["SCI_NAME", "ABA_CODE"]:
-            if row[header] is not None:
-                l.append(row[header])
-        return l
+    def canonicalize(self, name: str) -> str | None:
+        """Return the taxonomy's preferred spelling, or None for an unknown name."""
+        record = self.species_by_key.get(normalize_name(name))
+        return record["common_name"] if record else None
 
-    def get_checklist_from_url(self, aba=False):
-        """Downloads the 2022 eBird or ABA taxonomy list to resources"""
-        if aba:
-            name = ABA_CHECKLIST_NAME
-            url = ABA_CHECKLIST_URL
-        else:
-            name = CHECKLIST_NAME
-            url = CHECKLIST_URL
-        with open(Path("resources", name + '.zip'), "wb") as f:
-            f.write(requests.get(url).content)
-        with zipfile.ZipFile(Path("resources", name + '.zip'), "r") as zip_ref:
-            zip_ref.extractall(os.path.join("resources", "tmp"))
-        os.remove(Path("resources", name + '.zip'))
-        os.rename(os.path.join("resources", "tmp", name), os.path.join("resources", name))
-        shutil.rmtree(os.path.join("resources", "tmp"))
-        
+    def get_record(self, name: str) -> dict[str, str] | None:
+        """Return taxonomy metadata for a recognized common name."""
+        record = self.species_by_key.get(normalize_name(name))
+        return dict(record) if record else None
 
-    def validate(self, name: str):
-        """Very basic set check"""
-        return name in self.species_set
+    def validate(self, name: str) -> bool:
+        return self.canonicalize(name) is not None
 
-    def search(self, name: str):
-        return self.ac.search(word=name, max_cost=3, size=10)
-        
+    def suggest(self, name: str, size: int = 10) -> list[str]:
+        query = normalize_name(name)
+        if not query or size <= 0:
+            return []
+
+        prefix = [species for species in self.species
+                  if normalize_name(species).startswith(query)]
+        contains = [species for species in self.species
+                    if query in normalize_name(species)
+                    and species not in prefix]
+        results = (prefix + contains)[:size]
+        if len(results) < size and len(query) >= 4 and process is not None:
+            found = process.extract(
+                query,
+                self._normalized_names,
+                scorer=fuzz.ratio,
+                limit=size,
+                score_cutoff=55,
+            )
+            for normalized_name, _score, _index in found:
+                species = self._display_by_key[normalized_name]
+                if species not in results:
+                    results.append(species)
+                if len(results) >= size:
+                    break
+        return results
+
+    def search(self, name: str, max_cost: int = 3, size: int = 10):
+        """Compatibility wrapper for the previous list-of-rows autocomplete API."""
+        return [[species] for species in self.suggest(name, size=size)]
+
 
 if __name__ == "__main__":
-    v = Validate()
-    print("\"Wood Thrush\" is valid: " + str(v.validate("Wood Thrush")))
-    print("\"Aaron Sun\" is valid: " + str(v.validate("Aaron Sun")))
-    prompt = input("Enter a Bird to search for (enter \"q\" to quit):\n")
-    while prompt != "q":
-        print("search results for \"" + prompt + "\": " + str(v.search(prompt)))
-        prompt = input("Enter a Bird to search for (enter \"q\" to quit):\n")
+    validator = Validate()
+    print('"Wood Thrush" is valid: ' + str(validator.validate("Wood Thrush")))
+    print('"wood thrush" is valid: ' + str(validator.validate("wood thrush")))
+    print('Suggestions: ' + str(validator.suggest("wood th")))
